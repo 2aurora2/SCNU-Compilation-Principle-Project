@@ -9,17 +9,8 @@
 ```bash
 root
 ├─ .gitignore
-├─ Debug
-│    ├─ .qmake.stash
-│    ├─ Makefile
-│    ├─ Makefile.Debug
-│    ├─ Makefile.Release
-│    ├─ debug
-│    ├─ release
-│    └─ ui_mainwindow.h
 ├─ README.md	# 项目说明
 ├─ byyl.pro		
-├─ byyl.pro.user
 ├─ main.cpp
 ├─ util		# 常用操作封装为Util接口类的相关代码实现
 │    ├─ utils.cpp
