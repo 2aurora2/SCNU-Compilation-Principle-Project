@@ -42,10 +42,8 @@ QString Util::ReadFile() {
             QString content = stream.readAll();
             file.close();
             return content;
-        } else {
-            // 读取文件失败返回空字符串
-            return "";
         }
     }
+    // 如果没有选择文件或打开文件失败返回空字符串
     return "";
 }

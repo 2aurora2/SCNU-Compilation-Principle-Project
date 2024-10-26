@@ -21,14 +21,20 @@ INCLUDEPATH += \
 
 SOURCES += \
     main.cpp \
+    widgets/taskonewidget.cpp \
+    widgets/tasktwowidget.cpp \
     windows/mainwindow.cpp \
     util/utils.cpp
 
 HEADERS += \
+    widgets/taskonewidget.h \
+    widgets/tasktwowidget.h \
     windows/mainwindow.h \
     util/utils.h
 
 FORMS += \
+    widgets/taskonewidget.ui \
+    widgets/tasktwowidget.ui \
     windows/mainwindow.ui
 
 # Default rules for deployment.
