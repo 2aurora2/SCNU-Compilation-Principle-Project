@@ -19,6 +19,7 @@
 
 #include <QCoreApplication>
 #include <QFileDialog>
+#include <QMessageBox>
 #include <QTextStream>
 
 /*!
@@ -46,4 +47,29 @@ QString Util::ReadFile() {
     }
     // 如果没有选择文件或打开文件失败返回空字符串
     return "";
+}
+
+/*!
+    @Function   SaveFile
+    @Description    将文本内容保存为txt文件
+    @Parameter  content 待保存的文本内容 filename 文件名
+    @Return 保存是否成功的布尔值
+    @Attention
+*/
+bool Util::SaveFile(QString content, QString filename) {
+    QFile file(filename + ".txt");
+
+    if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        QTextStream out(&file);
+        out << content;
+        file.close();
+        QMessageBox::information(nullptr, "提示",
+                                 "文件保存为 " + filename + ".txt" + " 成功！",
+                                 QMessageBox::Yes);
+        return true;
+    } else {
+        QMessageBox::warning(nullptr, "提示", "文件保存失败！",
+                             QMessageBox::Yes);
+        return false;
+    }
 }

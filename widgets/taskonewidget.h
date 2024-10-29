@@ -7,16 +7,20 @@ namespace Ui {
 class TaskOneWidget;
 }
 
-class TaskOneWidget : public QWidget
-{
+class TaskOneWidget : public QWidget {
     Q_OBJECT
 
 public:
     explicit TaskOneWidget(QWidget *parent = nullptr);
     ~TaskOneWidget();
 
+private slots:
+    void uploadRegex();
+    void uploadCode();
+    void saveTextToFile();
+
 private:
     Ui::TaskOneWidget *ui;
 };
 
-#endif // TASKONEWIDGET_H
+#endif  // TASKONEWIDGET_H

@@ -27,6 +27,7 @@
 class Util {
 public:
     static QString ReadFile();
+    static bool SaveFile(QString content, QString filename);
 };
 
 #endif  // UTILS_H
