@@ -19,6 +19,7 @@
 #include <QVector>
 
 #include "common.h"
+#include "dfa.h"
 #include "nfa.h"
 
 #ifndef SOLUTIONONE_H
@@ -40,10 +41,14 @@ public:
     QMap<QString, QString> trans;  // 待转换正则表达式，键为名称，值为正则表达式
     QMap<QString, QVector<Node>> postfixs;  // 待转换正则表达式对应后缀表达式
     QMap<QString, NFA> nfas;  // 待转换正则表达式对应NFA对象
+    QMap<QString, DFA> dfas;  // 待转换正则表达式对应DFA对象
+    QMap<QString, DFA> mindfas;  // 待转换正则表达式对应最小化DFA对象
 
     void analyseRegex();
     void preProcessing();
     void nfaProcessing();
+    void dfaProcessing();
+    void mindfaProcessing();
 };
 
 #endif  // SOLUTIONONE_H

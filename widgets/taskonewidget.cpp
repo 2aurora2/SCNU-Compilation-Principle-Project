@@ -96,6 +96,7 @@ void TaskOneWidget::analyseRegex() {
     for (const QString &line : lines) task1.regexs.append(line);
     // 调用项目任务一解决方案类的分析主程序
     task1.analyseRegex();
+    QMessageBox::information(nullptr, "提示", "分析成功！", QMessageBox::Yes);
     // 填充要转换的正则表达式到下拉框中以供用户选择
     ui->comboBox->clear();
     for (const QString &line : lines)
@@ -113,6 +114,8 @@ void TaskOneWidget::checkoutRegex(const QString &regex) {
     int equalIndex = regex.indexOf('=');
     QString left = regex.mid(1, equalIndex - 1);
     showNFATable(left);
+    showDFATable(left);
+    showMinDFATable(left);
 }
 
 /*!
@@ -172,4 +175,99 @@ void TaskOneWidget::showNFATable(QString regex) {
     ui->NFAWidget->resizeColumnsToContents();
     ui->NFAWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui->NFAWidget->verticalHeader()->hide();
+}
+
+/*!
+    @Function       showDFATable
+    @Description  按照选择的正则表达式展示其DFA
+    @Parameter  要展示的正则表达式标识符
+    @Return
+    @Attention
+*/
+void TaskOneWidget::showDFATable(QString regex) {
+    DFA dfa = task1.dfas[regex];
+    QStandardItemModel *model = new QStandardItemModel(ui->DFAWidget);
+    model->clear();
+    model->setHorizontalHeaderItem(0, new QStandardItem("状态集合\\转移"));
+    QList<QString> list =
+        QList<QString>(dfa.operands.begin(), dfa.operands.end());
+    // 设置表头
+    for (int i = 0; i < list.size(); ++i)
+        model->setHorizontalHeaderItem(i + 1, new QStandardItem(list.at(i)));
+    // 设置第一列
+    for (int i = 1; i <= dfa.stateNum; ++i) {
+        QString colName = "{ ";
+        for (int j : dfa.M[i]) colName += QString::number(j) + ", ";
+        model->setItem(
+            i - 1, 0,
+            new QStandardItem(colName.left(colName.size() - 1) + " }"));
+        model->item(i - 1, 0)->setTextAlignment(Qt::AlignCenter);
+
+        if (i == 1) model->item(i - 1, 0)->setBackground(QBrush(Qt::red));
+        if (dfa.endStates.contains(i))
+            model->item(i - 1, 0)->setBackground(QBrush(Qt::green));
+    }
+    for (int i = 1; i <= dfa.stateNum; ++i) {
+        for (int j = 0; j < list.size(); ++j) {
+            if (dfa.G.contains(i) && dfa.G[i].contains(list[j])) {
+                QString label = "{ ";
+                for (int k : dfa.M[dfa.G[i][list[j]]])
+                    label += QString::number(k) + ", ";
+                model->setItem(
+                    i - 1, j + 1,
+                    new QStandardItem(label.left(label.size() - 1) + " }"));
+                model->item(i - 1, j + 1)->setTextAlignment(Qt::AlignCenter);
+            }
+        }
+    }
+    ui->DFAWidget->setModel(model);
+    ui->DFAWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
+}
+
+/*!
+    @Function       showMinDFATable
+    @Description  按照选择的正则表达式展示其最小化DFA结果
+    @Parameter  要展示的正则表达式标识符
+    @Return
+    @Attention
+*/
+void TaskOneWidget::showMinDFATable(QString regex) {
+    DFA dfa = task1.mindfas[regex];
+    QStandardItemModel *model = new QStandardItemModel(ui->minDFAWidget);
+    model->clear();
+    model->setHorizontalHeaderItem(0, new QStandardItem("状态集合\\转移"));
+    QList<QString> list =
+        QList<QString>(dfa.operands.begin(), dfa.operands.end());
+    // 设置表头
+    for (int i = 0; i < list.size(); ++i)
+        model->setHorizontalHeaderItem(i + 1, new QStandardItem(list.at(i)));
+    // 设置第一列
+    for (int i = 1; i <= dfa.stateNum; ++i) {
+        QString colName = "{ ";
+        for (int j : dfa.M[i]) colName += QString::number(j) + ", ";
+        model->setItem(
+            i - 1, 0,
+            new QStandardItem(colName.left(colName.size() - 1) + " }"));
+        model->item(i - 1, 0)->setTextAlignment(Qt::AlignCenter);
+
+        if (i == dfa.startNum)
+            model->item(i - 1, 0)->setBackground(QBrush(Qt::red));
+        if (dfa.endStates.contains(i))
+            model->item(i - 1, 0)->setBackground(QBrush(Qt::green));
+    }
+    for (int i = 1; i <= dfa.stateNum; ++i) {
+        for (int j = 0; j < list.size(); ++j) {
+            if (dfa.G.contains(i) && dfa.G[i].contains(list[j])) {
+                QString label = "{ ";
+                for (int k : dfa.M[dfa.G[i][list[j]]])
+                    label += QString::number(k) + ", ";
+                model->setItem(
+                    i - 1, j + 1,
+                    new QStandardItem(label.left(label.size() - 1) + " }"));
+                model->item(i - 1, j + 1)->setTextAlignment(Qt::AlignCenter);
+            }
+        }
+    }
+    ui->minDFAWidget->setModel(model);
+    ui->minDFAWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
 }

@@ -17,6 +17,7 @@
 #ifndef NFA_H
 #define NFA_H
 
+#include <QHash>
 #include <QSet>
 #include <QString>
 #include <QVector>
@@ -42,12 +43,18 @@ public:
     QSet<QString> operands;            // 正则表达式所有的操作数
     QVector<QVector<QString>> matrix;  // 邻接矩阵存储NFA状态转移
 
+    // 存储NFA某个状态编号通过某个操作数能到达的状态编号集合
+    QHash<int, QHash<QString, QSet<int>>> edges;
+
     Edge addOperand(QString operand);  // 新增操作数操作
     Edge conn(Edge e1, Edge e2);       // 连接运算
     Edge either(Edge e1, Edge e2);     // 或运算
     Edge closure(Edge e1);             // 闭包运算
     Edge positiveClosure(Edge e1);     // 正闭包运算
     Edge optional(Edge e1);            // 可选运算
+
+    void constructEdges();              // 构造成员变量edges
+    void epsilonClosure(QSet<int>& s);  // ε闭包
 };
 
 #endif  // NFA_H

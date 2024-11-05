@@ -21,6 +21,7 @@ INCLUDEPATH += \
 
 SOURCES += \
     main.cpp \
+    taskone/dfa.cpp \
     taskone/nfa.cpp \
     taskone/solutionone.cpp \
     widgets/taskonewidget.cpp \
@@ -30,6 +31,7 @@ SOURCES += \
 
 HEADERS += \
     taskone/common.h \
+    taskone/dfa.h \
     taskone/nfa.h \
     taskone/solutionone.h \
     widgets/taskonewidget.h \

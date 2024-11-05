@@ -30,6 +30,8 @@ private:
     SolutionOne task1;
 
     void showNFATable(QString regex);
+    void showDFATable(QString regex);
+    void showMinDFATable(QString regex);
 };
 
 #endif  // TASKONEWIDGET_H

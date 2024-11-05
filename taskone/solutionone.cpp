@@ -246,6 +246,8 @@ QString SolutionOne::removeSquareBrackets(QString initial) {
 void SolutionOne::analyseRegex() {
     preProcessing();
     nfaProcessing();
+    dfaProcessing();
+    mindfaProcessing();
 }
 
 /*!
@@ -302,6 +304,39 @@ void SolutionOne::nfaProcessing() {
     for (auto it = postfixs.begin(); it != postfixs.end(); ++it) {
         NFA nfa;
         postfixToNFA(it.value(), nfa);
+        nfa.constructEdges();
         nfas.insert(it.key(), nfa);
+    }
+}
+
+/*!
+    @Function       dfaProcessing
+    @Description  把已有的NFA均转为DFA
+    @Parameter
+    @Return
+    @Attention
+*/
+void SolutionOne::dfaProcessing() {
+    dfas.clear();
+    for (auto it = nfas.begin(); it != nfas.end(); ++it) {
+        DFA dfa;
+        dfa.fromNFA(it.value());
+        dfas.insert(it.key(), dfa);
+    }
+}
+
+/*!
+    @Function       dfaProcessing
+    @Description  把已有的DFA转最小化
+    @Parameter
+    @Return
+    @Attention
+*/
+void SolutionOne::mindfaProcessing() {
+    mindfas.clear();
+    for (auto it = dfas.begin(); it != dfas.end(); ++it) {
+        DFA mindfa;
+        mindfa.minDFA(it.value());
+        mindfas.insert(it.key(), mindfa);
     }
 }

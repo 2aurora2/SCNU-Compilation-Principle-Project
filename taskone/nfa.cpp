@@ -147,3 +147,42 @@ Edge NFA::optional(Edge e1) {
     matrix[e1.en][e] = EPSILON;
     return Edge(s, e);
 }
+
+/*!
+    @Function       constructEdges
+    @Description  通过遍历整个邻接矩阵构造出NFA存在的边
+    @Parameter
+    @Return
+    @Attention
+*/
+void NFA::constructEdges() {
+    for (int i = 0; i < stateNum; ++i)
+        for (int j = 0; j < stateNum; ++j)
+            if (matrix[i][j].size() != 0) edges[i][matrix[i][j]].insert(j);
+}
+
+/*!
+    @Function       epsilonClosure
+    @Description 求NFA某个状态编号集合中所有状态编号的ε闭包
+    @Parameter 待求ε闭包的编号集合引用
+    @Return
+    @Attention
+*/
+void NFA::epsilonClosure(QSet<int> &s) {
+    bool flag = false;
+    QSet<int> tmpSet = s;
+    while (!flag) {
+        flag = true;
+        QSet<int> tmp;
+        for (int i : tmpSet) {
+            QSet<int> nums = edges[i][EPSILON];
+            for (int i : nums)
+                if (!s.contains(i)) {
+                    tmp.insert(i);
+                    flag = false;
+                }
+        }
+        s.unite(tmp);
+        tmpSet = tmp;
+    }
+}
