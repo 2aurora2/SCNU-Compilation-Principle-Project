@@ -1,0 +1,7 @@
+digit=[0-9]
+letter=[a-zA-Z]
+_number=[1-9]digit*
+_identify=letter(digit|letter)*
+_operator=\+|-|\*|/|%|^|<|<>|<=|>=|>|=|:=
+_separator=;
+_comment={(digit|letter|operator|separator)*}

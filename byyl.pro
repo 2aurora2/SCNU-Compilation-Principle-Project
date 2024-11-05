@@ -21,12 +21,17 @@ INCLUDEPATH += \
 
 SOURCES += \
     main.cpp \
+    taskone/nfa.cpp \
+    taskone/solutionone.cpp \
     widgets/taskonewidget.cpp \
     widgets/tasktwowidget.cpp \
     windows/mainwindow.cpp \
     util/utils.cpp
 
 HEADERS += \
+    taskone/common.h \
+    taskone/nfa.h \
+    taskone/solutionone.h \
     widgets/taskonewidget.h \
     widgets/tasktwowidget.h \
     windows/mainwindow.h \

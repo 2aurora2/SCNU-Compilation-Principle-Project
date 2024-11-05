@@ -31,7 +31,7 @@
      <x>10</x>
      <y>10</y>
      <width>441</width>
-     <height>901</height>
+     <height>911</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -59,15 +59,29 @@
       </property>
      </widget>
     </item>
+    <item>
+     <widget class="QPushButton" name="regexAnalyseButton">
+      <property name="text">
+       <string>正则表达式分析</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QPushButton" name="codeAnalyseButton">
+      <property name="text">
+       <string>源代码词法分析</string>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QWidget" name="verticalLayoutWidget_2">
    <property name="geometry">
     <rect>
      <x>470</x>
-     <y>10</y>
+     <y>70</y>
      <width>1191</width>
-     <height>841</height>
+     <height>851</height>
     </rect>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -77,7 +91,7 @@
        <enum>QTabWidget::Triangular</enum>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <property name="tabBarAutoHide">
        <bool>false</bool>
@@ -86,13 +100,13 @@
        <attribute name="title">
         <string>Tab 1</string>
        </attribute>
-       <widget class="QTableWidget" name="NFAWidget">
+       <widget class="QTableView" name="NFAWidget">
         <property name="geometry">
          <rect>
           <x>0</x>
           <y>0</y>
           <width>1181</width>
-          <height>811</height>
+          <height>801</height>
          </rect>
         </property>
         <property name="styleSheet">
@@ -104,7 +118,7 @@
        <attribute name="title">
         <string>Tab 2</string>
        </attribute>
-       <widget class="QTableWidget" name="DFAWidget">
+       <widget class="QTableView" name="DFAWidget">
         <property name="geometry">
          <rect>
           <x>0</x>
@@ -122,7 +136,7 @@
        <attribute name="title">
         <string>页</string>
        </attribute>
-       <widget class="QTableWidget" name="minDFAWidget">
+       <widget class="QTableView" name="minDFAWidget">
         <property name="geometry">
          <rect>
           <x>0</x>
@@ -158,7 +172,7 @@
        <attribute name="title">
         <string>页</string>
        </attribute>
-       <widget class="QTableWidget" name="codeAnalyseWidget">
+       <widget class="QTableView" name="codeAnalyseWidget">
         <property name="geometry">
          <rect>
           <x>0</x>
@@ -176,29 +190,25 @@
     </item>
    </layout>
   </widget>
-  <widget class="QWidget" name="horizontalLayoutWidget">
+  <widget class="QWidget" name="horizontalLayoutWidget_2">
    <property name="geometry">
     <rect>
      <x>470</x>
-     <y>860</y>
+     <y>10</y>
      <width>1191</width>
-     <height>71</height>
+     <height>51</height>
     </rect>
    </property>
-   <layout class="QHBoxLayout" name="horizontalLayout">
+   <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,3">
     <item>
-     <widget class="QPushButton" name="regexAnalyseButton">
+     <widget class="QLabel" name="label">
       <property name="text">
-       <string>正则表达式分析</string>
+       <string>请选择你要展示转换表的正则表达式：</string>
       </property>
      </widget>
     </item>
     <item>
-     <widget class="QPushButton" name="codeAnalyseButton">
-      <property name="text">
-       <string>源代码分析</string>
-      </property>
-     </widget>
+     <widget class="QComboBox" name="comboBox"/>
     </item>
    </layout>
   </widget>

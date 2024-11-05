@@ -1,7 +1,9 @@
 #include "taskonewidget.h"
 
 #include <QDateTime>
+#include <QDebug>
 #include <QMessageBox>
+#include <QStandardItemModel>
 
 #include "ui_taskonewidget.h"
 #include "util/utils.h"
@@ -13,11 +15,12 @@ TaskOneWidget::TaskOneWidget(QWidget *parent)
     this->setBaseSize(1769, 923);
 
     // 通过标签页管理项目任务一分析结果
-    ui->tabWidget->setTabText(0, "正则表达式NFA结果");
-    ui->tabWidget->setTabText(1, "正则表达式DFA结果");
-    ui->tabWidget->setTabText(2, "正则表达式最小化DFA结果");
-    ui->tabWidget->setTabText(3, "生成词法分析源程序结果");
-    ui->tabWidget->setTabText(4, "分析源程序结果");
+    ui->tabWidget->setCurrentIndex(0);
+    ui->tabWidget->setTabText(0, "NFA状态转换表");
+    ui->tabWidget->setTabText(1, "DFA状态转换表");
+    ui->tabWidget->setTabText(2, "最小化DFA状态转换表");
+    ui->tabWidget->setTabText(3, "生成的词法分析源程序");
+    ui->tabWidget->setTabText(4, "源程序分词结果");
 
     // connect信号槽
     connect(ui->uploadRegexButton, SIGNAL(clicked()), this,
@@ -25,6 +28,10 @@ TaskOneWidget::TaskOneWidget(QWidget *parent)
     connect(ui->uploadCodeButton, SIGNAL(clicked()), this, SLOT(uploadCode()));
     connect(ui->saveFileButton, SIGNAL(clicked()), this,
             SLOT(saveTextToFile()));
+    connect(ui->regexAnalyseButton, SIGNAL(clicked()), this,
+            SLOT(analyseRegex()));
+    connect(ui->comboBox, SIGNAL(currentIndexChanged(const QString &)), this,
+            SLOT(checkoutRegex(const QString &)));
 }
 
 TaskOneWidget::~TaskOneWidget() { delete ui; }
@@ -39,7 +46,6 @@ TaskOneWidget::~TaskOneWidget() { delete ui; }
 void TaskOneWidget::uploadRegex() {
     QString content = Util::ReadFile();
     ui->textEdit->setPlainText(content);
-    // TODO: 保存正则表达式到某个成员，后续分析
 }
 
 /*!
@@ -52,7 +58,6 @@ void TaskOneWidget::uploadRegex() {
 void TaskOneWidget::uploadCode() {
     QString content = Util::ReadFile();
     ui->textEdit->setPlainText(content);
-    // TODO: 保存源代码到某个成员，后续分析
 }
 
 /*!
@@ -69,4 +74,102 @@ void TaskOneWidget::saveTextToFile() {
     else
         Util::SaveFile(content,
                        QDateTime::currentDateTime().toString("yyyyMMddHHmmss"));
+}
+
+/*!
+    @Function       analyseRegex
+    @Description  分析用户上传的正则表达式
+    @Parameter   无
+    @Return        无
+    @Attention  槽事件
+*/
+void TaskOneWidget::analyseRegex() {
+    QStringList lines =
+        ui->textEdit->toPlainText().split("\n", QString::SkipEmptyParts);
+    if (lines.size() == 0) {
+        QMessageBox::warning(nullptr, "提示", "正则表达式不能为空！",
+                             QMessageBox::Yes);
+        return;
+    }
+    // 按行保存正则表达式到下拉框内容
+    task1.regexs.clear();
+    for (const QString &line : lines) task1.regexs.append(line);
+    // 调用项目任务一解决方案类的分析主程序
+    task1.analyseRegex();
+    // 填充要转换的正则表达式到下拉框中以供用户选择
+    ui->comboBox->clear();
+    for (const QString &line : lines)
+        if (line[0] == '_') ui->comboBox->addItem(line);
+}
+
+/*!
+    @Function       checkoutRegex
+    @Description  切换要展示状态转换表的正则表达式时触发
+    @Parameter  要切换的正则表达式
+    @Return
+    @Attention 槽事件
+*/
+void TaskOneWidget::checkoutRegex(const QString &regex) {
+    int equalIndex = regex.indexOf('=');
+    QString left = regex.mid(1, equalIndex - 1);
+    showNFATable(left);
+}
+
+/*!
+    @Function       showNFATable
+    @Description  按照选择的正则表达式展示其NFA
+    @Parameter  要展示的正则表达式标识符
+    @Return
+    @Attention
+*/
+void TaskOneWidget::showNFATable(QString regex) {
+    NFA nfa = task1.nfas[regex];
+    QStandardItemModel *model = new QStandardItemModel(ui->NFAWidget);
+    model->clear();
+    model->setHorizontalHeaderItem(0, new QStandardItem("状态\\转移"));
+    QList<QString> list =
+        QList<QString>(nfa.operands.begin(), nfa.operands.end());
+    // 设置表头
+    for (int i = 0; i < list.size(); ++i)
+        model->setHorizontalHeaderItem(i + 1, new QStandardItem(list.at(i)));
+    // 设置状态列
+    for (int i = 0; i < nfa.stateNum; ++i) {
+        model->setItem(i, 0, new QStandardItem(QString::number(i)));
+        model->item(i, 0)->setTextAlignment(Qt::AlignCenter);
+        // 标明起始态和终态
+        if (i == nfa.startNum)
+            model->item(i, 0)->setBackground(QBrush(Qt::red));
+        if (i == nfa.endNum)
+            model->item(i, 0)->setBackground(QBrush(Qt::green));
+    }
+    for (int i = 0; i < nfa.stateNum; ++i) {
+        for (int j = 0; j < list.size(); ++j) {
+            if (list.at(j) != EPSILON) {
+                for (int k = 0; k < nfa.stateNum; ++k) {
+                    if (nfa.matrix[i][k] == list.at(j)) {
+                        model->setItem(i, j + 1,
+                                       new QStandardItem(QString::number(k)));
+                        model->item(i, j + 1)->setTextAlignment(
+                            Qt::AlignCenter);
+                    }
+                }
+            } else {
+                QString tmp;
+                for (int k = 0; k < nfa.stateNum; ++k) {
+                    if (nfa.matrix[i][k] == EPSILON) {
+                        tmp += QString::number(k);
+                        tmp += "、";
+                    }
+                }
+                model->setItem(i, j + 1,
+                               new QStandardItem(tmp.left(tmp.size() - 1)));
+                model->item(i, j + 1)->setTextAlignment(Qt::AlignCenter);
+            }
+        }
+    }
+    ui->NFAWidget->setModel(model);
+    ui->NFAWidget->resizeRowsToContents();
+    ui->NFAWidget->resizeColumnsToContents();
+    ui->NFAWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->NFAWidget->verticalHeader()->hide();
 }
