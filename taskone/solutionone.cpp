@@ -16,7 +16,14 @@
 */
 #include "solutionone.h"
 
+#include <utils.h>
+
+#include <QCoreApplication>
 #include <QDebug>
+#include <QDir>
+#include <QFileInfo>
+#include <QMessageBox>
+#include <QProcess>
 #include <QStack>
 
 #include "common.h"
@@ -248,6 +255,58 @@ void SolutionOne::analyseRegex() {
     nfaProcessing();
     dfaProcessing();
     mindfaProcessing();
+    QMessageBox::information(nullptr, "提示", "正则表达式分析完成！",
+                             QMessageBox::Ok);
+    generateCode();
+}
+
+/*!
+    @Function       analyseCode
+    @Description   对用户上传的源代码进行词法分析并返回结果给窗口对象展示
+    @Parameter
+    @Return
+    @Attention
+*/
+QVector<QPair<QString, QString>> SolutionOne::analyseCode(QString code) {
+    Util::SaveFile(code, "sample.txt");
+    QString samplePath = "sample.txt";
+    QString tokenizerPath = "tokenizer.cpp";
+
+    QString sampleAbsolutePath = QFileInfo(samplePath).absoluteFilePath();
+    QString tokenAbsolutePath = QFileInfo(tokenizerPath).absoluteFilePath();
+
+    // 创建进程编译分词器以及调用分词器进行分词
+    QProcess process;
+    process.start("g++", QStringList()
+                             << "-o" << "tokenizer" << "tokenizer.cpp");
+    if (!process.waitForFinished())
+        qDebug() << "Compilation failed:" << process.readAllStandardError();
+    process.start("./tokenizer");
+    if (!process.waitForFinished())
+        qDebug() << "Execution failed:" << process.readAllStandardError();
+
+    // 分词结果返回
+    QVector<QPair<QString, QString>> pairs;
+    QDir currentDir = QDir::current();
+    QString filePath = currentDir.filePath("sample.lex");
+    QFile file(filePath);
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream in(&file);
+        while (!in.atEnd()) {
+            QString line = in.readLine();
+            line = line.trimmed();
+            QStringList elements = line.split(" ", QString::SkipEmptyParts);
+            if (elements.size() < 2) {
+                qDebug() << line;
+                continue;
+            }
+            pairs.append(qMakePair(elements.at(0), elements.at(1)));
+        }
+        // 关闭文件
+        file.close();
+    } else
+        qDebug() << "Unable to open the file for reading.";
+    return pairs;
 }
 
 /*!
@@ -339,4 +398,121 @@ void SolutionOne::mindfaProcessing() {
         mindfa.minDFA(it.value());
         mindfas.insert(it.key(), mindfa);
     }
+}
+
+/*!
+    @Function       generateCode
+    @Description    生成可进行词法分析的源程序
+    @Parameter
+    @Return
+    @Attention
+*/
+void SolutionOne::generateCode() {
+    QVector<QString> types;
+    QVector<DFA> min_dfa_list;
+    if (mindfas.keys().contains("keyword")) {
+        types.append("keyword");
+        min_dfa_list.append(mindfas["keyword"]);
+    }
+    for (auto it = mindfas.begin(); it != mindfas.end(); ++it) {
+        if (it.key() == "keyword") continue;
+        types.append(it.key());
+        min_dfa_list.append(it.value());
+    }
+
+    // 头文件
+    code = "#include <iostream>\n";
+    code += "#include <fstream>\n";
+    code += "#include <string>\n";
+    code += "#include <cctype>\n";
+    code += "using namespace std;\n\n";
+    // 全局变量
+    code += "ifstream src_file(\"sample.txt\", ios::in);\n";
+    code += "ofstream res_file(\"sample.lex\", ios::out | ios::trunc);\n";
+    code += "int read_pos;\n";
+    code += "string token;\n";
+    code += "string buffer;\n";
+    code += "string buf_suc;\n";
+    code += "string tok_suc;\n";
+    code += "string buf_err;\n\n";
+    // 跳过空白字符函数
+    code += "void ignoreSpace() {\n";
+    code += "\tchar ch;\n";
+    code += "\twhile(src_file.get(ch)) {\n";
+    code += "\t\tread_pos++;\n";
+    code += "\t\tif(ch == '\\n') read_pos++;\n";
+    code += "\t\tif(!isspace(ch)) {\n";
+    code += "\t\t\tread_pos--;\n";
+    code += "\t\t\tsrc_file.unget();\n";
+    code += "\t\t\tbreak;\n";
+    code += "\t\t}\n";
+    code += "\t}\n";
+    code += "}\n\n";
+    // 为每个最小化DFA定义一个match函数
+    for (int i = 0; i < min_dfa_list.size(); ++i) {
+        code += "bool match_" + types[i] + "() {\n";
+        code += "\tint state = " + QString::number(min_dfa_list[i].startNum) +
+                ";\n";
+        code += "\tchar ch;\n";
+        code += "\twhile((ch = src_file.peek()) != EOF) {\n";
+        code += "\t\tswitch(state) {\n";
+        for (int j = 1; j <= min_dfa_list[i].stateNum; ++j) {
+            code += "\t\tcase " + QString::number(j) + ":\n";
+            code += "\t\t\tswitch(ch) {\n";
+            for (auto change : min_dfa_list[i].G[j].keys()) {
+                code += "\t\t\tcase '" + change + "':\n";
+                code += "\t\t\t\tstate = " +
+                        QString::number(min_dfa_list[i].G[j][change]) + ";\n";
+                code += "\t\t\t\tbuffer += ch;\n";
+                code += "\t\t\t\tsrc_file.get(ch);\n";
+                code += "\t\t\t\tbreak;\n";
+            }
+            code += "\t\t\tdefault:\n";
+            if (min_dfa_list[i].endStates.contains(j)) {
+                code += "\t\t\t\ttoken = \"" + types[i] + "\";\n";
+                code += "\t\t\t\treturn true;\n";
+            } else
+                code += "\t\t\t\treturn false;\n";
+            code += "\t\t\t}\n";
+            code += "\t\t\tbreak;\n";
+        }
+        code += "\t\t}\n";
+        code += "\t}\n";
+        code += "\tif(state == " +
+                QString::number(*min_dfa_list[i].endStates.begin()) + " ) {\n";
+        code += "\t\ttoken = \"" + types[i] + "\";\n";
+        code += "\t\treturn true;\n";
+        code += "\t};\n";
+        code += "\treturn false;\n";
+        code += "}\n\n";
+    }
+    // 主函数
+    code += "int main(void) {\n";
+    code += "\tchar ch;\n";
+    code += "\tignoreSpace();\n";
+    code += "\twhile((ch = src_file.peek()) != EOF) {\n";
+    code += "\t\ttok_suc.clear();\n";
+    code += "\t\tbuf_suc.clear();\n";
+    for (int i = 0; i < min_dfa_list.size(); ++i) {
+        code += "\t\tif(!match_" + types[i] + "()) buf_err = buffer;\n";
+        code += "\t\telse if(buffer.size() > buf_suc.size()) {\n";
+        code += "\t\t\tbuf_suc = buffer;\n";
+        code += "\t\t\ttok_suc = token;\n";
+        code += "\t\t}\n";
+        code += "\t\tbuffer.clear();\n";
+        code += "\t\tsrc_file.seekg(read_pos, ios::beg);\n";
+    }
+    code += "\t\tif(buf_suc.size() == 0){ \n";
+    code += "\t\t\tres_file << \"UNKNOWN: \" << buf_err << endl;\n";
+    code += "\t\t\texit(1);\n";
+    code += "\t\t}\n";
+    code += "\t\tres_file << tok_suc << \" \" << buf_suc << endl;\n";
+    code += "\t\tread_pos += buf_suc.size();\n";
+    code += "\t\tsrc_file.seekg(read_pos, ios::beg);\n";
+    code += "\t\tignoreSpace();\n";
+    code += "\t}\n";
+    code += "\treturn 0;\n";
+    code += "}";
+
+    Util::SaveFile(code, "tokenizer.cpp");
 }

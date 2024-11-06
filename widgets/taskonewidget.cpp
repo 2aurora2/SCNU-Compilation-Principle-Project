@@ -30,6 +30,8 @@ TaskOneWidget::TaskOneWidget(QWidget *parent)
             SLOT(saveTextToFile()));
     connect(ui->regexAnalyseButton, SIGNAL(clicked()), this,
             SLOT(analyseRegex()));
+    connect(ui->analyseCodeButton, SIGNAL(clicked()), this,
+            SLOT(analyseCode()));
     connect(ui->comboBox, SIGNAL(currentIndexChanged(const QString &)), this,
             SLOT(checkoutRegex(const QString &)));
 }
@@ -57,12 +59,12 @@ void TaskOneWidget::uploadRegex() {
 */
 void TaskOneWidget::uploadCode() {
     QString content = Util::ReadFile();
-    ui->textEdit->setPlainText(content);
+    ui->sourceCodeEdit->setPlainText(content);
 }
 
 /*!
     @Function   saveTextToFile
-    @Description  保存文本编辑框的内容到文件，以当前时间作为文件名
+    @Description  保存文本框正则表达式的内容到文件，以当前时间作为文件名
     @Parameter  无
     @Return 无
     @Attention  槽事件
@@ -72,8 +74,7 @@ void TaskOneWidget::saveTextToFile() {
     if (content == "")
         QMessageBox::warning(nullptr, "提示", "文本为空！", QMessageBox::Yes);
     else
-        Util::SaveFile(content,
-                       QDateTime::currentDateTime().toString("yyyyMMddHHmmss"));
+        Util::SaveFile(content, "regex.txt");
 }
 
 /*!
@@ -88,19 +89,45 @@ void TaskOneWidget::analyseRegex() {
         ui->textEdit->toPlainText().split("\n", QString::SkipEmptyParts);
     if (lines.size() == 0) {
         QMessageBox::warning(nullptr, "提示", "正则表达式不能为空！",
-                             QMessageBox::Yes);
+                             QMessageBox::Ok);
         return;
     }
     // 按行保存正则表达式到下拉框内容
     task1.regexs.clear();
     for (const QString &line : lines) task1.regexs.append(line);
-    // 调用项目任务一解决方案类的分析主程序
+    // 调用项目任务一解决方案类的正则表达式分析主程序
     task1.analyseRegex();
-    QMessageBox::information(nullptr, "提示", "分析成功！", QMessageBox::Yes);
+    ui->textBrowser->setText(task1.code);
     // 填充要转换的正则表达式到下拉框中以供用户选择
     ui->comboBox->clear();
     for (const QString &line : lines)
         if (line[0] == '_') ui->comboBox->addItem(line);
+}
+
+/*!
+    @Function       analyseCode
+    @Description  对用户上传的源代码进行词法分析
+    @Parameter
+    @Return
+    @Attention 槽事件
+*/
+void TaskOneWidget::analyseCode() {
+    QString code = ui->sourceCodeEdit->toPlainText();
+    QVector<QPair<QString, QString>> results = task1.analyseCode(code);
+
+    QStandardItemModel *model = new QStandardItemModel(ui->tokenWidget);
+    model->clear();
+    model->setHorizontalHeaderItem(0, new QStandardItem("单词"));
+    model->setHorizontalHeaderItem(1, new QStandardItem("类型"));
+    for (int i = 0; i < results.size(); ++i) {
+        model->setItem(i, 0, new QStandardItem(results[i].second));
+        model->setItem(i, 1, new QStandardItem(results[i].first));
+        model->item(i, 0)->setTextAlignment(Qt::AlignCenter);
+        model->item(i, 1)->setTextAlignment(Qt::AlignCenter);
+    }
+    ui->tokenWidget->setModel(model);
+    ui->NFAWidget->resizeRowsToContents();
+    ui->tokenWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
 }
 
 /*!

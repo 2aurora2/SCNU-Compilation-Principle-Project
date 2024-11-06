@@ -27,11 +27,19 @@
 
 class SolutionOne {
 private:
+    // 辅助函数
     QString removeSquareBrackets(QString initial);
     QString bracketToOr(QString input);
     QString addConnectSymbol(QString input);
     QVector<Node> regexToPostfix(QString regex);
     void postfixToNFA(QVector<Node> postfix, NFA &nfa);
+
+    // 正则表达式分析流程函数
+    void preProcessing();
+    void nfaProcessing();
+    void dfaProcessing();
+    void mindfaProcessing();
+    void generateCode();
 
 public:
     SolutionOne();
@@ -44,11 +52,10 @@ public:
     QMap<QString, DFA> dfas;  // 待转换正则表达式对应DFA对象
     QMap<QString, DFA> mindfas;  // 待转换正则表达式对应最小化DFA对象
 
+    QString code;  // 生成的代码
+
     void analyseRegex();
-    void preProcessing();
-    void nfaProcessing();
-    void dfaProcessing();
-    void mindfaProcessing();
+    QVector<QPair<QString, QString>> analyseCode(QString code);
 };
 
 #endif  // SOLUTIONONE_H

@@ -46,6 +46,13 @@
      </widget>
     </item>
     <item>
+     <widget class="QPushButton" name="saveFileButton">
+      <property name="text">
+       <string>保存正则表达式文件</string>
+      </property>
+     </widget>
+    </item>
+    <item>
      <widget class="QPushButton" name="uploadCodeButton">
       <property name="text">
        <string>上传源代码文件</string>
@@ -53,23 +60,9 @@
      </widget>
     </item>
     <item>
-     <widget class="QPushButton" name="saveFileButton">
-      <property name="text">
-       <string>保存当前文本框内容为文件</string>
-      </property>
-     </widget>
-    </item>
-    <item>
      <widget class="QPushButton" name="regexAnalyseButton">
       <property name="text">
        <string>正则表达式分析</string>
-      </property>
-     </widget>
-    </item>
-    <item>
-     <widget class="QPushButton" name="codeAnalyseButton">
-      <property name="text">
-       <string>源代码词法分析</string>
       </property>
      </widget>
     </item>
@@ -91,7 +84,7 @@
        <enum>QTabWidget::Triangular</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>4</number>
       </property>
       <property name="tabBarAutoHide">
        <bool>false</bool>
@@ -168,6 +161,12 @@
           <height>811</height>
          </rect>
         </property>
+        <property name="font">
+         <font>
+          <family>Tahoma</family>
+          <pointsize>11</pointsize>
+         </font>
+        </property>
         <property name="styleSheet">
          <string notr="true">border: none;</string>
         </property>
@@ -177,17 +176,54 @@
        <attribute name="title">
         <string>页</string>
        </attribute>
-       <widget class="QTableView" name="codeAnalyseWidget">
+       <widget class="QTableView" name="tokenWidget">
+        <property name="geometry">
+         <rect>
+          <x>630</x>
+          <y>0</y>
+          <width>551</width>
+          <height>811</height>
+         </rect>
+        </property>
+        <property name="font">
+         <font>
+          <family>微软雅黑</family>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">border: 1px solid black;</string>
+        </property>
+       </widget>
+       <widget class="QTextEdit" name="sourceCodeEdit">
         <property name="geometry">
          <rect>
           <x>0</x>
           <y>0</y>
-          <width>1181</width>
+          <width>541</width>
           <height>811</height>
          </rect>
         </property>
+        <property name="font">
+         <font>
+          <family>Arial</family>
+          <pointsize>12</pointsize>
+         </font>
+        </property>
         <property name="styleSheet">
-         <string notr="true">border: none;</string>
+         <string notr="true">border: 1px solid black;</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="analyseCodeButton">
+        <property name="geometry">
+         <rect>
+          <x>550</x>
+          <y>370</y>
+          <width>71</width>
+          <height>51</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>分析→</string>
         </property>
        </widget>
       </widget>

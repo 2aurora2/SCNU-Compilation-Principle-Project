@@ -1,0 +1,10 @@
+{comment1}
+read x; {comment2}
+if(x>0)
+    fact := 1;
+    repeat
+        fact := fact * x;
+        x:=-x
+    until x = 1;
+    write fact
+end

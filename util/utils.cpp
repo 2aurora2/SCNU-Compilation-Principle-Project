@@ -52,19 +52,20 @@ QString Util::ReadFile() {
 /*!
     @Function   SaveFile
     @Description    将文本内容保存为txt文件
-    @Parameter  content 待保存的文本内容 filename 文件名
-    @Return 保存是否成功的布尔值
+    @Parameter  content 保存文本内容 folderPath 保存的文件夹名 filename文件名
+    @Return 保存的绝对路径
     @Attention
 */
 bool Util::SaveFile(QString content, QString filename) {
-    QFile file(filename + ".txt");
+    QFile file(filename);
 
     if (file.open(QIODevice::WriteOnly | QIODevice::Text)) {
         QTextStream out(&file);
         out << content;
         file.close();
+        if (filename.contains("sample")) return true;
         QMessageBox::information(nullptr, "提示",
-                                 "文件保存为 " + filename + ".txt" + " 成功！",
+                                 filename + "文件保存 " + "成功！",
                                  QMessageBox::Yes);
         return true;
     } else {

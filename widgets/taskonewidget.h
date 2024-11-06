@@ -21,6 +21,7 @@ private slots:
     void uploadCode();
     void saveTextToFile();
     void analyseRegex();
+    void analyseCode();
 
     void checkoutRegex(const QString &regex);
 
