@@ -36,7 +36,11 @@
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
     <item>
-     <widget class="QTextEdit" name="textEdit"/>
+     <widget class="QTextEdit" name="textEdit">
+      <property name="placeholderText">
+       <string>一行一个正则表达式，每行的正则表达式之间不需要空格，需要形成DFA的正则表达式请以_开头，形如digit=[0-9]，_number=digit+</string>
+      </property>
+     </widget>
     </item>
     <item>
      <widget class="QPushButton" name="uploadRegexButton">

@@ -126,7 +126,7 @@ void TaskOneWidget::analyseCode() {
         model->item(i, 1)->setTextAlignment(Qt::AlignCenter);
     }
     ui->tokenWidget->setModel(model);
-    ui->NFAWidget->resizeRowsToContents();
+    ui->tokenWidget->resizeRowsToContents();
     ui->tokenWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
 }
 
