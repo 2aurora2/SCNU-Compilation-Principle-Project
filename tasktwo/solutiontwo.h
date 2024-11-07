@@ -27,6 +27,7 @@ private:
     void saveFormula(QString input);
     QSet<QString> getFirst(QString symbol);
     void initFirst();
+    void initFollow();
 
 public:
     SolutionTwo();

@@ -140,6 +140,55 @@ void SolutionTwo::initFirst() {
     }
 }
 
+/*!
+    @Function       initFollow
+    @Description  构造非终结符的FOLLOW集合
+    @Parameter
+    @Return
+    @Attention
+*/
+void SolutionTwo::initFollow() {
+    follow[start].insert(END_FLAG);  // 文法开始符号的Follow集合包括$
+    // 标记所有Follow集合是否发生变化，如果没变化说明求解Follow集合完毕
+    bool flag = true;
+    while (flag) {
+        flag = false;
+        QHashIterator<QString, QVector<QVector<QString>>> i(formula);
+        while (i.hasNext()) {
+            i.next();
+            QString key = i.key();
+            const QVector<QVector<QString>>& raws = i.value();
+            for (auto& raw : raws) {
+                for (int index = 0; index < raw.size(); ++index) {
+                    if (!notEnd.contains(raw[index])) continue;
+                    // 找当前非终结符后面整体的FIRST
+                    QSet<QString> firstOfBehind;
+                    int cur = index + 1;
+                    for (; cur < raw.size(); cur++) {
+                        QSet<QString> firstOfCur = getFirst(raw[cur]);
+                        for (auto f : firstOfCur) firstOfBehind.insert(f);
+                        firstOfBehind.remove(EPSILON);
+                        if (!firstOfCur.contains(EPSILON)) break;
+                    }
+                    for (auto symbol : firstOfBehind) {
+                        if (follow[raw[index]].contains(symbol)) continue;
+                        follow[raw[index]].insert(symbol);
+                        flag = true;
+                    }
+                    if (cur == raw.size()) {
+                        QSet<QString> followOfCur = follow[key];
+                        for (auto symbol : followOfCur) {
+                            if (follow[raw[index]].contains(symbol)) continue;
+                            follow[raw[index]].insert(symbol);
+                            flag = true;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 SolutionTwo::SolutionTwo() {}
 
 /*!
@@ -153,6 +202,7 @@ void SolutionTwo::analyseGrammar(QString input) {
     // TODO: 每次重新分析之前都要清空之前的
     saveFormula(input);
     initFirst();
+    initFollow();
     //    printGrammar(formula);
     QMessageBox::information(nullptr, "提示", "文法分析完成！",
                              QMessageBox::Ok);

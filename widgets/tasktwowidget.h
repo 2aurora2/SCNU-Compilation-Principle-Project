@@ -25,7 +25,7 @@ private:
 
     SolutionTwo task2;
 
-    void showNotEndFirst();
+    void showNotEndFirstFollow();
 };
 
 #endif  // TASKTWOWIDGET_H
