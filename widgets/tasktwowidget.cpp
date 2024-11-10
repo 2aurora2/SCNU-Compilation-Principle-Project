@@ -58,6 +58,8 @@ void TaskTwoWidget::analyseGrammar() {
     }
     task2.analyseGrammar(content);
     showNotEndFirstFollow();
+    showLR1OrLALR1DFA(ui->lr1DFATable, task2.lr1);
+    showLR1OrLALR1DFA(ui->lalr1DFATable, task2.lalr1);
     // TODO: 展示分析结果
 }
 
@@ -95,4 +97,48 @@ void TaskTwoWidget::showNotEndFirstFollow() {
     ui->firstFollowTable->setModel(model);
     ui->firstFollowTable->resizeColumnsToContents();
     ui->firstFollowTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+}
+
+/*!
+    @Function   showLR1OrLALR1DFA
+    @Description    展示LR1或LALR1的DFA
+    @Parameter
+    @Return
+    @Attention
+*/
+void TaskTwoWidget::showLR1OrLALR1DFA(QTableView *tb, LR lr) {
+    QStandardItemModel *model = new QStandardItemModel(tb);
+    model->clear();
+    model->setHorizontalHeaderItem(0, new QStandardItem("状态集合\\转移"));
+    QSet<QString> keys;
+    for (auto itOuter = lr.changeHash.begin(); itOuter != lr.changeHash.end();
+         ++itOuter)
+        for (auto itInner = itOuter.value().begin();
+             itInner != itOuter.value().end(); ++itInner)
+            keys.insert(itInner.key());
+    QList<QString> list = keys.values();
+    // 设置表头
+    for (int i = 0; i < list.size(); ++i)
+        model->setHorizontalHeaderItem(i + 1, new QStandardItem(list.at(i)));
+    // 设置第一列
+    for (int i = 1; i <= lr.size; ++i) {
+        QString state = lr.stateHashT[i - 1].printState();
+        model->setItem(i - 1, 0, new QStandardItem(state));
+        model->item(i - 1, 0)->setTextAlignment(Qt::AlignCenter);
+        if (i == 1) model->item(i - 1, 0)->setBackground(QBrush(Qt::red));
+    }
+    for (int i = 0; i < lr.size; ++i) {
+        for (int j = 0; j < list.size(); ++j) {
+            if (lr.changeHash[i].contains(list[j])) {
+                model->setItem(i, j + 1,
+                               new QStandardItem(QString::number(
+                                   lr.changeHash[i][list[j]] + 1)));
+                model->item(i, j + 1)->setTextAlignment(Qt::AlignCenter);
+            }
+        }
+    }
+    tb->setModel(model);
+    tb->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    tb->resizeColumnsToContents();
+    tb->resizeRowsToContents();
 }

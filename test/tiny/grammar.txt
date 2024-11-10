@@ -13,4 +13,3 @@ addop -> + | -
 term -> term mulop factor | factor 
 mulop -> * | / | % | ^
 factor -> ( exp ) | number | identifier
-

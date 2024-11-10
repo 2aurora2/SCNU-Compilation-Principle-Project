@@ -18,6 +18,7 @@
 #include <QSet>
 #include <QString>
 
+#include "lr.h"
 #include "tasktwo/macro.h"
 #ifndef SOLUTIONTWO_H
 #define SOLUTIONTWO_H
@@ -25,9 +26,17 @@
 class SolutionTwo {
 private:
     void saveFormula(QString input);
+
     QSet<QString> getFirst(QString symbol);
-    void initFirst();
-    void initFollow();
+    void initFirst();   // 构造非终结符的FIRST集合
+    void initFollow();  // 构造非终结符的FOLLOW集合
+
+    // 构造DFA的辅助函数CLOSURE和GOTO
+    State CLOSURE(State I);
+    State GOTO(State I, QString X);
+
+    LR buildLR1(QString start);
+    LR buildLALR1(LR lr1);
 
 public:
     SolutionTwo();
@@ -37,6 +46,9 @@ public:
     QHash<QString, QSet<QString>> first;   // Vn到First集合的映射
     QHash<QString, QSet<QString>> follow;  // Vn到Follow集合的映射
     QHash<QString, QVector<QVector<QString>>> formula;  // 文法规则
+
+    LR lr1;
+    LR lalr1;
 
     void analyseGrammar(QString grammar);
 };

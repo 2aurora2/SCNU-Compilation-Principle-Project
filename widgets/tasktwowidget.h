@@ -3,6 +3,7 @@
 
 #include <tasktwo/solutiontwo.h>
 
+#include <QTableView>
 #include <QWidget>
 
 namespace Ui {
@@ -26,6 +27,7 @@ private:
     SolutionTwo task2;
 
     void showNotEndFirstFollow();
+    void showLR1OrLALR1DFA(QTableView *tb, LR lr);
 };
 
 #endif  // TASKTWOWIDGET_H

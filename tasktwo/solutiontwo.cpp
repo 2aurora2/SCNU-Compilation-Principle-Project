@@ -18,6 +18,7 @@
 
 #include <QDebug>
 #include <QMessageBox>
+#include <functional>
 
 /*!
     @Function       printGrammar
@@ -69,6 +70,7 @@ void SolutionTwo::saveFormula(QString input) {
         } else {
             if (i == 0) {
                 start = tokens[i] + "\'";
+                notEnd.insert(start);
                 right.clear();
                 right.append(left);
                 formula[start].append(right);
@@ -189,6 +191,195 @@ void SolutionTwo::initFollow() {
     }
 }
 
+/*!
+    @Function       CLOSURE
+    @Description  构建DFA的辅助函数-通过当前State已有的项目Item构建出完整的State
+    @Parameter  包含初始Item的State
+    @Return 构建出的完整State
+    @Attention
+*/
+State SolutionTwo::CLOSURE(State I) {
+    State J = I;
+    while (true) {
+        // 遍历当前项目集中的项目
+        for (Item item : I.st) {
+            // 下一个字符是非终结符
+            if (item.pos < item.rule.size() &&
+                notEnd.contains(item.rule[item.pos])) {
+                QVector<QString> beta(item.rule.begin() + item.pos + 1,
+                                      item.rule.end());
+                int k = 0;
+                QSet<QString> firstBeta;
+                // 求First(β)
+                for (; k < beta.size(); ++k) {
+                    for (auto f : getFirst(beta[k]))
+                        if (f != EPSILON) firstBeta.insert(f);
+                    if (!getFirst(beta[k]).contains(EPSILON)) break;
+                }
+                // k == beta.size()
+                // 说明First(β)存在EPSILON或者β为空则要把先行字符集添加
+                // 至此求出First(βa)
+                if (k == beta.size())
+                    for (auto a : item.next) firstBeta.insert(a);
+                // 构造新的LR(1)项目
+                for (auto rtGrammar : formula[item.rule[item.pos]]) {
+                    Item newItem;
+                    newItem.name = item.rule[item.pos];
+                    newItem.rule = rtGrammar;
+                    for (auto fb : firstBeta) newItem.next.insert(fb);
+                    newItem.pos = 0;
+                    // 将新的项目添加到当前项目集，若有相同核心则合并Item
+                    bool flag = false;
+                    auto it = J.st.begin();
+                    for (; it != J.st.end(); ++it)
+                        if (newItem.haveSameCore(*it)) {
+                            flag = true;
+                            for (auto _next : it->next)
+                                newItem.next.insert(_next);
+                            break;
+                        }
+                    if (flag) J.st.remove(*it);
+                    J.st.insert(newItem);
+                }
+            }
+        }
+        if (I == J) break;
+        I = J;
+    }
+    return J;
+}
+
+/*!
+    @Function       GOTO
+    @Description  构建DFA的辅助函数-返回当前State通过X能转移得到的State
+    @Parameter  已有DFA状态I，转移X
+    @Return 转移得到的DFA状态
+    @Attention
+*/
+State SolutionTwo::GOTO(State I, QString X) {
+    State Inew;
+    for (Item item : I.st) {
+        if (item.pos >= item.rule.size() || item.rule[item.pos] != X)
+            continue;         // 找到符合条件的转移
+        Item newItem = item;  // 构造新文法规则，仅有pos不同
+        newItem.pos++;
+        Inew.st.insert(newItem);
+    }
+    return CLOSURE(Inew);
+}
+
+/*!
+    @Function       buildLR1
+    @Description  构造出LR(1)的DFA
+    @Parameter  开始符号
+    @Return LR对象
+    @Attention
+*/
+LR SolutionTwo::buildLR1(QString start) {
+    LR lr1;
+    Item firstItem;  // 构建第一个文法规则
+    firstItem.name = start;
+    firstItem.rule = formula[start][0];
+    firstItem.next = QSet<QString>({END_FLAG});
+    firstItem.pos = 0;
+    State firstState;  // 构建初态
+    firstState.st.insert(firstItem);
+    firstState = CLOSURE(firstState);  // 装入第一条文法规则后求闭包
+    lr1.stateHash[firstState] = lr1.size;
+    lr1.stateHashT[lr1.size++] = firstState;
+
+    // dfs构建LR1的函数，使用function，C++11特性
+    std::function<void(State)> dfs = [&](State faState) {
+        int faId = lr1.stateHash[faState];  // 获取状态对应编号
+        QVector<QString> changeMethods;
+        // 获取当前State的移进项有哪些
+        for (auto faItem : faState.st)
+            if (faItem.pos < faItem.rule.size())  // 移进项
+                changeMethods.push_back(faItem.rule[faItem.pos]);
+        for (QString changeMethod : changeMethods) {  // 深搜每一个转移
+            State sonState = GOTO(faState, changeMethod);
+            if (sonState.st.empty()) continue;
+            if (lr1.stateHash.contains(sonState)) {
+                int sonId = lr1.stateHash[sonState];
+                lr1.changeHash[faId][changeMethod] = sonId;
+            } else {
+                lr1.stateHash[sonState] = lr1.size;
+                lr1.stateHashT[lr1.size++] = sonState;
+                int sonId = lr1.stateHash[sonState];
+                lr1.changeHash[faId][changeMethod] = sonId;
+                dfs(sonState);
+            }
+        }
+    };
+
+    dfs(firstState);
+    return lr1;
+}
+
+/*!
+    @Function       buildLALR1
+    @Description  根据LR(1)进行合并同心项处理得到LALR(1)
+    @Parameter  LR(1)对象
+    @Return LALR(1)对象
+    @Attention
+*/
+LR SolutionTwo::buildLALR1(LR lr1) {
+    LR lalr1;
+    int* p = new int[lr1.size];  // 并查集(合并同心项)
+    for (int i = 0; i < lr1.size; i++) p[i] = i;
+    std::function<int(int)> find = [&](int x) {
+        if (p[x] != x) p[x] = find(p[x]);
+        return p[x];
+    };
+    for (int i = 0; i < lr1.size - 1; i++) {  // 状态合并
+        for (int j = i + 1; j < lr1.size; j++)
+            if (lr1.stateHashT[i].haveSameCore(
+                    lr1.stateHashT[j])) {  // 判断同心项(合并并查集)
+                p[find(j)] = find(i);
+            }
+    }
+    QHash<int, int> cntChangeSet;  // 最终合并完的所有集合根结点→LALR1状态映射
+    int idx = 0;
+    for (int i = 0; i < lr1.size; i++)
+        if (!cntChangeSet.count(find(i))) cntChangeSet[find(i)] = idx++;
+    lalr1.size = cntChangeSet.size();  // LALR1的状态数
+    QHash<int, State> revlalr1StateHash;  // 构建LALR1的反向哈希：编号->状态
+    for (int i = 0; i < lr1.size; i++) {
+        // find(i)是i划分到的集合的根节点编号，cntChangeSet[find(i)]则是i对应LALR1中集合的编号
+        if (!revlalr1StateHash.count(
+                cntChangeSet[find(i)])) {  // 第一次出现的LALR1状态
+            revlalr1StateHash[cntChangeSet[find(i)]] = lr1.stateHashT[i];
+        } else {
+            QSet<Item> mergeState;
+            for (auto item : lr1.stateHashT[i].st) {  // 遍历两个状态
+                for (auto lalrItem :
+                     revlalr1StateHash[cntChangeSet[find(i)]].st) {
+                    if (item.haveSameCore(
+                            lalrItem)) {  // 两个状态中的规则同心则合并
+                        for (auto t : item.next) lalrItem.next.insert(t);
+                        mergeState.insert(lalrItem);
+                    }
+                }
+            }
+            revlalr1StateHash[cntChangeSet[find(i)]].st = mergeState;
+        }
+    }
+    for (auto it = revlalr1StateHash.begin(); it != revlalr1StateHash.end();
+         ++it) {  // 利用反向哈希构建正向哈希：状态->编号
+        lalr1.stateHash[it.value()] = it.key();
+    }
+    lalr1.stateHashT = revlalr1StateHash;
+    for (int i = 0; i < lr1.size; i++) {  // 构造LALR1转移集
+        for (auto it = lr1.changeHash[i].begin(); it != lr1.changeHash[i].end();
+             ++it) {
+            auto changeMethod = it.key();
+            lalr1.changeHash[cntChangeSet[find(i)]][changeMethod] =
+                cntChangeSet[find(lr1.changeHash[i][changeMethod])];
+        }
+    }
+    return lalr1;
+}
+
 SolutionTwo::SolutionTwo() {}
 
 /*!
@@ -199,11 +390,16 @@ SolutionTwo::SolutionTwo() {}
     @Attention
 */
 void SolutionTwo::analyseGrammar(QString input) {
-    // TODO: 每次重新分析之前都要清空之前的
+    notEnd.clear();
+    first.clear();
+    follow.clear();
+    formula.clear();
+
     saveFormula(input);
     initFirst();
     initFollow();
-    //    printGrammar(formula);
+    lr1 = buildLR1(start);
+    lalr1 = buildLALR1(lr1);
     QMessageBox::information(nullptr, "提示", "文法分析完成！",
                              QMessageBox::Ok);
 }

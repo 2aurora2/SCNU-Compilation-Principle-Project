@@ -5,7 +5,7 @@ then
     fact := 1;
     repeat
         fact := fact * x;
-        x:=-x
+        x := x - 1
     until x = 1;
     write fact
 end
