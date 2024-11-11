@@ -36,12 +36,7 @@ public:
     int pos;
 
     // 判断Item之间核心是否一样
-    bool haveSameCore(const Item &other) const {
-        if (other.rule.size() != rule.size()) return false;
-        for (auto symbol : rule)
-            if (!other.rule.contains(symbol)) return false;
-        return name == other.name && pos == other.pos;
-    }
+    bool haveSameCore(const Item &other) const;
 
     // 重载相等运算符
     bool operator==(const Item &other) const {
@@ -52,21 +47,10 @@ public:
     }
 
     // 构建Item对象的打印
-    QString printItem() const {
-        QString print = "[ " + name + " → ";
-        for (int i = 0; i < rule.size(); ++i) {
-            if (pos == i) print += ".";
-            print += rule[i] + " ";
-        }
-        if (pos == rule.size()) print += ".";
-        print += ", ";
-        for (auto it = next.begin(); it != next.end(); ++it) {
-            print += *it;
-            if (it != next.end() - 1) print += " / ";
-        }
-        print += " ]";
-        return print;
-    }
+    QString printItem() const;
+
+    // 返回Item对象的规则
+    QString printRule() const;
 };
 
 uint qHash(const Item &item);
@@ -81,19 +65,7 @@ public:
     QSet<Item> st;
 
     // 判断State核心是否一样
-    bool haveSameCore(const State &other) const {
-        if (st.size() != other.st.size()) return false;
-        for (auto it = st.begin(); it != st.end(); ++it) {
-            bool flag = false;
-            for (auto _it = other.st.begin(); _it != other.st.end(); ++_it)
-                if (it->haveSameCore(*_it)) {
-                    flag = true;
-                    break;
-                }
-            if (!flag) return false;
-        }
-        return true;
-    }
+    bool haveSameCore(const State &other) const;
 
     // 重载相等运算符
     bool operator==(const State &other) const {
@@ -104,14 +76,7 @@ public:
     }
 
     // 构建State对象的打印
-    QString printState() {
-        QString print;
-        for (QSet<Item>::iterator i = st.begin(); i != st.end(); ++i) {
-            print += i->printItem();
-            if (i != st.end() - 1) print += "\n";
-        }
-        return print;
-    }
+    QString printState();
 };
 
 uint qHash(const State &state);
@@ -128,6 +93,9 @@ public:
     QHash<State, int> stateHash;                 // 状态到编号的映射
     QHash<int, State> stateHashT;                // 编号到状态的映射
     QHash<int, QHash<QString, int>> changeHash;  // 邻接表
+
+    QString conflict;
+    bool isConflict();
 };
 
 #endif  // LR_H

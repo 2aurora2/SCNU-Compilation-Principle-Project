@@ -18,6 +18,7 @@
 #include <QSet>
 #include <QString>
 
+#include "analysetable.h"
 #include "lr.h"
 #include "tasktwo/macro.h"
 #ifndef SOLUTIONTWO_H
@@ -49,6 +50,7 @@ public:
 
     LR lr1;
     LR lalr1;
+    AnalyseTable tb;
 
     void analyseGrammar(QString grammar);
 };

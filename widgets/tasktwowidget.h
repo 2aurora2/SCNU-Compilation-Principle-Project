@@ -28,6 +28,7 @@ private:
 
     void showNotEndFirstFollow();
     void showLR1OrLALR1DFA(QTableView *tb, LR lr);
+    void showLALR1AnalyseTable();
 };
 
 #endif  // TASKTWOWIDGET_H

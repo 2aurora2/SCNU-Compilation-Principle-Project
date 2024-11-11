@@ -400,6 +400,9 @@ void SolutionTwo::analyseGrammar(QString input) {
     initFollow();
     lr1 = buildLR1(start);
     lalr1 = buildLALR1(lr1);
+    bool flag = lalr1.isConflict();
+    if (!flag) tb.init(lalr1, formula);
+
     QMessageBox::information(nullptr, "提示", "文法分析完成！",
                              QMessageBox::Ok);
 }

@@ -60,6 +60,7 @@ void TaskTwoWidget::analyseGrammar() {
     showNotEndFirstFollow();
     showLR1OrLALR1DFA(ui->lr1DFATable, task2.lr1);
     showLR1OrLALR1DFA(ui->lalr1DFATable, task2.lalr1);
+    showLALR1AnalyseTable();
     // TODO: 展示分析结果
 }
 
@@ -109,7 +110,7 @@ void TaskTwoWidget::showNotEndFirstFollow() {
 void TaskTwoWidget::showLR1OrLALR1DFA(QTableView *tb, LR lr) {
     QStandardItemModel *model = new QStandardItemModel(tb);
     model->clear();
-    model->setHorizontalHeaderItem(0, new QStandardItem("状态集合\\转移"));
+    model->setHorizontalHeaderItem(0, new QStandardItem("状态\\转移"));
     QSet<QString> keys;
     for (auto itOuter = lr.changeHash.begin(); itOuter != lr.changeHash.end();
          ++itOuter)
@@ -141,4 +142,68 @@ void TaskTwoWidget::showLR1OrLALR1DFA(QTableView *tb, LR lr) {
     tb->setEditTriggers(QAbstractItemView::NoEditTriggers);
     tb->resizeColumnsToContents();
     tb->resizeRowsToContents();
+}
+
+/*!
+    @Function       showLALR1AnalyseTable
+    @Description 在LALR1的DFA无规约-规约冲突时展示其分析表
+    @Parameter  是否有规约-规约冲突
+    @Return
+    @Attention 对于移进-规约冲突采取移进策略
+*/
+void TaskTwoWidget::showLALR1AnalyseTable() {
+    // 展示可规约规则到下拉框
+    ui->comboBox->clear();
+    for (int i = 0; i < task2.tb.formula.size(); ++i)
+        ui->comboBox->addItem("r" + QString::number(i) + ": " +
+                              task2.tb.formula[i]);
+    // 展示分析表
+    QStandardItemModel *model = new QStandardItemModel(ui->analyseTable);
+    model->clear();
+    if (task2.lalr1.conflict == "规约-规约冲突") {
+        model->setHorizontalHeaderLabels(QStringList() << "提示");
+        QStandardItem *emptyItem = new QStandardItem(task2.lalr1.conflict);
+        emptyItem->setEditable(false);
+        model->setItem(0, 0, emptyItem);
+        model->item(0, 0)->setTextAlignment(Qt::AlignCenter);
+    } else {
+        model->setHorizontalHeaderItem(0, new QStandardItem("状态\\转移"));
+        // 找到所有的转移
+        QSet<QString> keys;
+        for (auto itOuter = task2.lalr1.changeHash.begin();
+             itOuter != task2.lalr1.changeHash.end(); ++itOuter)
+            for (auto itInner = itOuter.value().begin();
+                 itInner != itOuter.value().end(); ++itInner)
+                keys.insert(itInner.key());
+        QList<QString> list = keys.values();
+        list.append("$");  // 添加初态的accept
+        // 设置表头
+        for (int i = 0; i < list.size(); ++i)
+            model->setHorizontalHeaderItem(i + 1,
+                                           new QStandardItem(list.at(i)));
+        // 设置第一列
+        for (int i = 0; i < task2.lalr1.size; ++i) {
+            model->setItem(i, 0, new QStandardItem(QString::number(i)));
+            model->item(i, 0)->setTextAlignment(Qt::AlignCenter);
+            if (i == 0) model->item(i, 0)->setBackground(QBrush(Qt::red));
+        }
+        for (int i = 0; i < task2.lalr1.size; ++i) {
+            for (int j = 0; j < list.size(); ++j) {
+                if (task2.tb.tb[i].contains(list[j])) {
+                    Cell cell = task2.tb.tb[i][list[j]];
+                    QString temp;
+                    if (cell.flag == 1)
+                        temp = "s" + QString::number(cell.num);
+                    else if (cell.flag == 2)
+                        temp = "r" + QString::number(cell.num);
+                    else
+                        temp = "Accept";
+                    model->setItem(i, j + 1, new QStandardItem(temp));
+                    model->item(i, j + 1)->setTextAlignment(Qt::AlignCenter);
+                }
+            }
+        }
+    }
+    ui->analyseTable->setModel(model);
+    ui->analyseTable->verticalHeader()->hide();
 }

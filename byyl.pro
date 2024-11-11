@@ -24,6 +24,7 @@ SOURCES += \
     taskone/dfa.cpp \
     taskone/nfa.cpp \
     taskone/solutionone.cpp \
+    tasktwo/analysetable.cpp \
     tasktwo/lr.cpp \
     tasktwo/solutiontwo.cpp \
     widgets/taskonewidget.cpp \
@@ -36,6 +37,7 @@ HEADERS += \
     taskone/dfa.h \
     taskone/nfa.h \
     taskone/solutionone.h \
+    tasktwo/analysetable.h \
     tasktwo/lr.h \
     tasktwo/macro.h \
     tasktwo/solutiontwo.h \
