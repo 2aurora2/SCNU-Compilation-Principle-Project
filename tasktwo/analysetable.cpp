@@ -44,29 +44,30 @@ void AnalyseTable::init(LR lalr1, QHash<QString, QVector<QVector<QString>>> f) {
         }
     }
     // 构建分析表
+    Cell cell;
     for (int i = 0; i < lalr1.size; ++i) {
         QHash<QString, int> change = lalr1.changeHash[i];
         State state = lalr1.stateHashT[i];
-        Cell cell;
-        if (change.size()) {
-            // 有移进
-            cell.flag = 1;
-            for (auto it = change.begin(); it != change.end(); ++it) {
-                cell.num = it.value();
-                tb[i][it.key()] = cell;
-            }
-        } else {
-            // 无移进，进行规约
-            cell.flag = 2;
-            for (auto it = state.st.begin(); it != state.st.end(); ++it) {
+        for (auto it = state.st.begin(); it != state.st.end(); ++it) {
+            // 规约
+            if (it->pos == it->rule.size()) {
+                cell.flag = 2;
                 QString rule = it->printRule();
                 int index = formula.indexOf(rule);
                 cell.num = index;
                 for (auto symbol : it->next) tb[i][symbol] = cell;
             }
         }
-        // 初态碰到$则Accept
-        cell.flag = 3;
-        tb[0]["$"] = cell;
+        if (change.size()) {
+            // 移进
+            cell.flag = 1;
+            for (auto it = change.begin(); it != change.end(); ++it) {
+                cell.num = it.value();
+                tb[i][it.key()] = cell;
+            }
+        }
     }
+    // 初态碰到$则Accept
+    cell.flag = 3;
+    tb[0]["$"] = cell;
 }

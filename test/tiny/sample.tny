@@ -1,11 +1,9 @@
-{comment1}
-read x; {comment2}
-if x>0
-then
-    fact := 1;
-    repeat
-        fact := fact * x;
-        x := x - 1
-    until x = 1;
-    write fact
+read x;
+if 0 < x then
+  fact := 1;
+  repeat
+    fact := fact * x;
+    x := x - 1
+  until x = 0;
+  write fact  
 end

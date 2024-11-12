@@ -99,7 +99,8 @@ QString Item::printItem() const {
     QString print = "[ " + name + " → ";
     for (int i = 0; i < rule.size(); ++i) {
         if (pos == i) print += ".";
-        print += rule[i] + " ";
+        print += rule[i];
+        if (pos != rule.size() - 1) print += " ";
     }
     if (pos == rule.size()) print += ".";
     print += ", ";

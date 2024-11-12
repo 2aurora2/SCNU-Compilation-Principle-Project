@@ -2,7 +2,9 @@
 
 #include <utils.h>
 
+#include <QDebug>
 #include <QMessageBox>
+#include <QStack>
 #include <QStandardItemModel>
 
 #include "ui_tasktwowidget.h"
@@ -21,11 +23,17 @@ TaskTwoWidget::TaskTwoWidget(QWidget *parent)
     ui->tabWidget->setTabText(3, "LALR(1)分析表");
     ui->tabWidget->setTabText(4, "源程序语法分析");
 
+    ui->tabWidget_2->setCurrentIndex(0);
+    ui->tabWidget_2->setTabText(0, "源程序语法分析过程");
+    ui->tabWidget_2->setTabText(1, "源程序语法树");
+
     // connect信号槽
     connect(ui->uploadBNFButton, SIGNAL(clicked()), this,
             SLOT(uploadGrammar()));
     connect(ui->grammarAnalyseButton, SIGNAL(clicked()), this,
             SLOT(analyseGrammar()));
+    connect(ui->uploadLexButton, SIGNAL(clicked()), this, SLOT(uploadLex()));
+    connect(ui->codeAnalyseButton, SIGNAL(clicked()), this, SLOT(analyseLex()));
 }
 
 TaskTwoWidget::~TaskTwoWidget() { delete ui; }
@@ -61,7 +69,147 @@ void TaskTwoWidget::analyseGrammar() {
     showLR1OrLALR1DFA(ui->lr1DFATable, task2.lr1);
     showLR1OrLALR1DFA(ui->lalr1DFATable, task2.lalr1);
     showLALR1AnalyseTable();
-    // TODO: 展示分析结果
+}
+
+/*!
+    @Function   uploadLex
+    @Description 上传项目任务一得到的源程序词法分析结果文件
+    @Parameter
+    @Return
+    @Attention
+*/
+void TaskTwoWidget::uploadLex() {
+    pairs.clear();
+    QString content = Util::ReadFile();
+    QStringList lines = content.split("\n", QString::SkipEmptyParts);
+    for (const QString &line : lines) {
+        QStringList elements = line.split(" ", QString::SkipEmptyParts);
+        if (elements.size() < 2 || elements[0] == "comment") {
+            continue;
+        }
+        pairs.append(qMakePair(elements.at(0), elements.at(1)));
+    }
+    // 展示上传的文件
+    QStandardItemModel *model = new QStandardItemModel(ui->lexTable);
+    model->clear();
+    model->setHorizontalHeaderItem(0, new QStandardItem("单词"));
+    model->setHorizontalHeaderItem(1, new QStandardItem("类型"));
+    for (int i = 0; i < pairs.size(); ++i) {
+        model->setItem(i, 0, new QStandardItem(pairs[i].second));
+        model->setItem(i, 1, new QStandardItem(pairs[i].first));
+        model->item(i, 0)->setTextAlignment(Qt::AlignCenter);
+        model->item(i, 1)->setTextAlignment(Qt::AlignCenter);
+    }
+    ui->lexTable->setModel(model);
+    ui->lexTable->resizeRowsToContents();
+    ui->lexTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->lexTable->verticalHeader()->hide();
+}
+
+/*!
+    @Function       addAnalyseRow
+    @Description    添加句子分析过程表格的一行
+    @Parameter  表格模型model，分析栈stk，pairs
+    @Return
+    @Attention
+*/
+void addAnalyseRow(QStandardItemModel *model, QVector<QPair<QString, int>> stk,
+                   QVector<QPair<QString, QString>> pairs, int row) {
+    QString analyse, input;
+    for (auto item : stk) analyse += item.first + " ";
+    for (int j = 0; j < pairs.size(); ++j) input += pairs[j].second + " ";
+    model->setItem(row, 0, new QStandardItem(analyse));
+    model->setItem(row, 1, new QStandardItem(input));
+    model->item(row, 0)->setTextAlignment(Qt::AlignLeft);
+    model->item(row, 1)->setTextAlignment(Qt::AlignRight);
+}
+
+/*!
+    @Function       analyseLex
+    @Description  利用上传的源程序词法分析结果进行语法分析
+    @Parameter
+    @Return
+    @Attention
+*/
+void TaskTwoWidget::analyseLex() {
+    QStandardItemModel *model = new QStandardItemModel(ui->processTable);
+    model->clear();
+    model->setHorizontalHeaderItem(0, new QStandardItem("分析栈"));
+    model->setHorizontalHeaderItem(1, new QStandardItem("输入"));
+    pairs.append(
+        qMakePair(QString::fromUtf8("END_FLAG"), QString::fromUtf8("$")));
+    QHash<int, QHash<QString, Cell>> tb = task2.tb.tb;
+    // 分析栈：QPair第一个类型是元素内容，第二个元素是元素类型（1是状态编号，2是字符）
+    QVector<QPair<QString, int>> stk;
+    stk.push_back(qMakePair(QString::fromUtf8("$"), 2));
+    stk.push_back(qMakePair(QString::number(1), 1));
+    int row = 0;
+    addAnalyseRow(model, stk, pairs, row++);
+    for (int i = 0; i < pairs.size();) {
+        // 从输入中拿出一个字符（first是类型，second是token）
+        QPair<QString, QString> cur = pairs[i];
+        int idx = stk.back().first.toInt() - 1;
+        if (!tb[idx].contains(cur.first) && !tb[idx].contains(cur.second) &&
+            !tb[idx].contains(EPSILON)) {
+            QMessageBox::warning(nullptr, "提示", "语法错误！",
+                                 QMessageBox::Yes);
+            break;
+        }
+        Cell to;
+        QString match;
+        if (tb[idx].contains(cur.first))  // 匹配类型
+            to = tb[idx][cur.first], match = cur.second;
+        else if (tb[idx].contains(cur.second))  // 匹配token
+            to = tb[idx][cur.second], match = cur.second;
+        else if (tb[idx].contains(EPSILON))  // 匹配EPSILON
+            to = tb[idx][EPSILON], match = EPSILON;
+        bool nextStep = false;
+        bool protocol = false;
+        while (!nextStep) {
+            if (to.flag == 1) {  // 移进操作，直接push移进到的状态编号到分析栈
+                stk.push_back(qMakePair(match, 2));
+                stk.push_back(qMakePair(QString::number(to.num + 1), 1));
+                ++i;
+                nextStep = true;
+            } else if (to.flag == 2) {  // 规约操作
+                protocol = true;
+                // 1. 找到规约的规则
+                //     a. 规约的符号 b. 规则右部的长度len
+                QString rule = task2.tb.formula[to.num];
+                QStringList ruleSplit = rule.split(" ");
+                QString symbol = ruleSplit[0];
+                int len = ruleSplit.size() - 2;
+                // 2. 从分析栈弹出len * 2的元素
+                //     a. 如果元素不足则源程序存在语法错误
+                int k = 0;
+                while (k < len * 2 && stk.size() > 0) {
+                    stk.pop_back();
+                    k++;
+                }
+                if (k < len * 2) {
+                    QMessageBox::warning(nullptr, "提示", "语法错误！",
+                                         QMessageBox::Yes);
+                    goto show;
+                }
+                // 3. 获取此时栈顶状态经过规约符号的转移，重复对to.flag的判断
+                int _idx = stk.back().first.toInt() - 1;
+                match = symbol;
+                to = tb[_idx][symbol];
+            } else {  // Accept
+                QMessageBox::information(nullptr, "提示", "接受输入！",
+                                         QMessageBox::Yes);
+                nextStep = true;
+                goto show;
+            }
+        }
+        if (protocol) i--;  // 如果有规约操作则需重新拿去输入的字符
+        addAnalyseRow(model, stk, pairs.mid(i), row++);
+    }
+show:
+    ui->processTable->setModel(model);
+    ui->processTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    ui->processTable->resizeColumnsToContents();
+    ui->processTable->resizeRowsToContents();
 }
 
 /*!
@@ -183,7 +331,7 @@ void TaskTwoWidget::showLALR1AnalyseTable() {
                                            new QStandardItem(list.at(i)));
         // 设置第一列
         for (int i = 0; i < task2.lalr1.size; ++i) {
-            model->setItem(i, 0, new QStandardItem(QString::number(i)));
+            model->setItem(i, 0, new QStandardItem(QString::number(i + 1)));
             model->item(i, 0)->setTextAlignment(Qt::AlignCenter);
             if (i == 0) model->item(i, 0)->setBackground(QBrush(Qt::red));
         }
@@ -193,7 +341,7 @@ void TaskTwoWidget::showLALR1AnalyseTable() {
                     Cell cell = task2.tb.tb[i][list[j]];
                     QString temp;
                     if (cell.flag == 1)
-                        temp = "s" + QString::number(cell.num);
+                        temp = "s" + QString::number(cell.num + 1);
                     else if (cell.flag == 2)
                         temp = "r" + QString::number(cell.num);
                     else
