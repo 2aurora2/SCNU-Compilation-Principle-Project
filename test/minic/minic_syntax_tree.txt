@@ -1,0 +1,68 @@
+parameters → parameter-list
+parameters → void
+simple-expression → additive-expression relop additive-expression
+simple-expression → additive-expression
+statement-list → statement-list statement
+statement-list → @
+while-stmt → while ( expression ) statement ;
+program → definition-list
+return-stmt → return ;
+return-stmt → return expression ;
+addop → +
+addop → -
+type-indicator → int
+type-indicator → float
+type-indicator → double
+type-indicator → void
+relop → <=
+relop → <
+relop → >
+relop → >=
+relop → ==
+relop → !=
+arguments → argument-list
+arguments → @
+parameter → type-indicator identifier
+parameter → type-indicator identifier [ ]
+factor → ( expression )
+factor → variable
+factor → call
+factor → number
+condition-stmt → if ( expression ) statement ;
+condition-stmt → if ( expression ) statement else statement ;
+additive-expression → additive-expression addop term
+additive-expression → term
+definition-list → definition-list definition
+definition-list → definition
+compound-stmt → { local-definitions statement-list }
+variable → identifier
+variable → identifier [ expression ]
+expression → variable = expression
+expression → simple-expression
+dowhile-stmt → do statement while ( expression ) ;
+parameter-list → parameter-list , parameter
+parameter-list → parameter
+argument-list → argument-list , expression
+argument-list → expression
+variable-definition → type-indicator identifier ;
+variable-definition → type-indicator identifier [ number ] ;
+function-definition → type-indicator identifier ( parameters ) compound-stmt
+term → term mulop factor
+term → factor
+local-definitions → local-definitions variable-definition
+local-definitions → @
+call → identifier ( arguments )
+mulop → *
+mulop → /
+mulop → %
+mulop → ^
+statement → expression-stmt
+statement → compound-stmt
+statement → condition-stmt
+statement → while-stmt
+statement → dowhile-stmt
+statement → return-stmt
+definition → variable-definition
+definition → function-definition
+expression-stmt → expression ;
+expression-stmt → ;

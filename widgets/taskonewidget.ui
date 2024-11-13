@@ -195,7 +195,7 @@
          </font>
         </property>
         <property name="styleSheet">
-         <string notr="true">border: 1px solid black;</string>
+         <string notr="true"/>
         </property>
        </widget>
        <widget class="QTextEdit" name="sourceCodeEdit">

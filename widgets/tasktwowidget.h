@@ -22,14 +22,17 @@ private slots:
     void uploadGrammar();
     void analyseGrammar();
     void uploadLex();
+    void uploadSyntaxTreeEncode();
     void analyseLex();
 
 private:
     Ui::TaskTwoWidget *ui;
 
     SolutionTwo task2;
-    QVector<QPair<QString, QString>> pairs;
+    QVector<QPair<QString, QString>> pairs;    // 源程序单词编码
+    QHash<QString, QVector<int>> treeEncoder;  // 语法树编码
 
+    void reset();
     void showNotEndFirstFollow();
     void showLR1OrLALR1DFA(QTableView *tb, LR lr);
     void showLALR1AnalyseTable();

@@ -70,7 +70,7 @@
      <x>520</x>
      <y>10</y>
      <width>1141</width>
-     <height>901</height>
+     <height>911</height>
     </rect>
    </property>
    <property name="tabShape">
@@ -182,7 +182,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>820</y>
+       <y>840</y>
        <width>1111</width>
        <height>41</height>
       </rect>
@@ -192,6 +192,13 @@
        <widget class="QPushButton" name="uploadLexButton">
         <property name="text">
          <string>上传源程序词法分析的结果文件</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="uploadTreeEncode">
+        <property name="text">
+         <string>上传语法树编码文件</string>
         </property>
        </widget>
       </item>
@@ -209,7 +216,7 @@
       <rect>
        <x>10</x>
        <y>40</y>
-       <width>281</width>
+       <width>261</width>
        <height>771</height>
       </rect>
      </property>
@@ -219,7 +226,7 @@
       <rect>
        <x>10</x>
        <y>10</y>
-       <width>271</width>
+       <width>261</width>
        <height>21</height>
       </rect>
      </property>
@@ -233,7 +240,7 @@
     <widget class="QTabWidget" name="tabWidget_2">
      <property name="geometry">
       <rect>
-       <x>300</x>
+       <x>290</x>
        <y>10</y>
        <width>831</width>
        <height>801</height>
@@ -261,9 +268,9 @@
       <widget class="QTableView" name="processTable">
        <property name="geometry">
         <rect>
-         <x>10</x>
+         <x>0</x>
          <y>10</y>
-         <width>811</width>
+         <width>831</width>
          <height>751</height>
         </rect>
        </property>
@@ -279,7 +286,42 @@
       <attribute name="title">
        <string>Tab 2</string>
       </attribute>
+      <widget class="QTreeView" name="treeView">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>10</y>
+         <width>831</width>
+         <height>761</height>
+        </rect>
+       </property>
+      </widget>
      </widget>
+    </widget>
+    <widget class="QLabel" name="label_3">
+     <property name="geometry">
+      <rect>
+       <x>0</x>
+       <y>810</y>
+       <width>1131</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="font">
+      <font>
+       <family>Arial</family>
+       <pointsize>9</pointsize>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">color:red;</string>
+     </property>
+     <property name="text">
+      <string>说明：对源程序进行语法分析之前请上传对应的语法树编码文件用于语法树生成</string>
+     </property>
+     <property name="alignment">
+      <set>Qt::AlignCenter</set>
+     </property>
     </widget>
    </widget>
   </widget>

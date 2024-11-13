@@ -34,6 +34,8 @@ TaskTwoWidget::TaskTwoWidget(QWidget *parent)
             SLOT(analyseGrammar()));
     connect(ui->uploadLexButton, SIGNAL(clicked()), this, SLOT(uploadLex()));
     connect(ui->codeAnalyseButton, SIGNAL(clicked()), this, SLOT(analyseLex()));
+    connect(ui->uploadTreeEncode, SIGNAL(clicked()), this,
+            SLOT(uploadSyntaxTreeEncode()));
 }
 
 TaskTwoWidget::~TaskTwoWidget() { delete ui; }
@@ -58,6 +60,8 @@ void TaskTwoWidget::uploadGrammar() {
     @Attention
 */
 void TaskTwoWidget::analyseGrammar() {
+    reset();
+
     QString content = ui->textEdit->toPlainText();
     if (content.size() == 0) {
         QMessageBox::warning(nullptr, "提示", "文法不能为空！",
@@ -107,6 +111,23 @@ void TaskTwoWidget::uploadLex() {
 }
 
 /*!
+    @Function   uploadSyntaxTreeEncode
+    @Description    上传语法树编码文件
+    @Parameter
+    @Return
+    @Attention
+*/
+void TaskTwoWidget::uploadSyntaxTreeEncode() {
+    QString content = Util::ReadFile();
+    QStringList lines = content.split("\n", QString::SkipEmptyParts);
+    for (int i = 0; i < lines.size(); i += 2) {
+        QString rule = lines[i];
+        QStringList encoder = lines[i + 1].split(" ");
+        for (auto e : encoder) treeEncoder[rule].append(e.toInt());
+    }
+}
+
+/*!
     @Function       addAnalyseRow
     @Description    添加句子分析过程表格的一行
     @Parameter  表格模型model，分析栈stk，pairs
@@ -132,6 +153,14 @@ void addAnalyseRow(QStandardItemModel *model, QVector<QPair<QString, int>> stk,
     @Attention
 */
 void TaskTwoWidget::analyseLex() {
+    if (pairs.empty() || treeEncoder.empty()) {
+        QMessageBox::warning(nullptr, "提示",
+                             "请保证已上传下述文件，两者缺一不可： \n "
+                             "(1)源程序词法分析结果文件(.lex)\n "
+                             "(2)对应源程序的语法树编码文件(.txt)",
+                             QMessageBox::Ok);
+        return;
+    }
     QStandardItemModel *model = new QStandardItemModel(ui->processTable);
     model->clear();
     model->setHorizontalHeaderItem(0, new QStandardItem("分析栈"));
@@ -152,7 +181,7 @@ void TaskTwoWidget::analyseLex() {
         if (!tb[idx].contains(cur.first) && !tb[idx].contains(cur.second) &&
             !tb[idx].contains(EPSILON)) {
             QMessageBox::warning(nullptr, "提示", "语法错误！",
-                                 QMessageBox::Yes);
+                                 QMessageBox::Ok);
             break;
         }
         Cell to;
@@ -169,7 +198,7 @@ void TaskTwoWidget::analyseLex() {
             if (to.flag == 1) {  // 移进操作，直接push移进到的状态编号到分析栈
                 stk.push_back(qMakePair(match, 2));
                 stk.push_back(qMakePair(QString::number(to.num + 1), 1));
-                ++i;
+                if (match != EPSILON) ++i;
                 nextStep = true;
             } else if (to.flag == 2) {  // 规约操作
                 protocol = true;
@@ -188,7 +217,7 @@ void TaskTwoWidget::analyseLex() {
                 }
                 if (k < len * 2) {
                     QMessageBox::warning(nullptr, "提示", "语法错误！",
-                                         QMessageBox::Yes);
+                                         QMessageBox::Ok);
                     goto show;
                 }
                 // 3. 获取此时栈顶状态经过规约符号的转移，重复对to.flag的判断
@@ -197,12 +226,12 @@ void TaskTwoWidget::analyseLex() {
                 to = tb[_idx][symbol];
             } else {  // Accept
                 QMessageBox::information(nullptr, "提示", "接受输入！",
-                                         QMessageBox::Yes);
+                                         QMessageBox::Ok);
                 nextStep = true;
                 goto show;
             }
         }
-        if (protocol) i--;  // 如果有规约操作则需重新拿去输入的字符
+        if (protocol) i--;  // 如果有规约操作则需重新拿输入的字符
         addAnalyseRow(model, stk, pairs.mid(i), row++);
     }
 show:
@@ -210,6 +239,26 @@ show:
     ui->processTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui->processTable->resizeColumnsToContents();
     ui->processTable->resizeRowsToContents();
+}
+
+/*!
+    @Function       reset
+    @Description  清空项目任务二相关
+    @Parameter
+    @Return
+    @Attention
+*/
+void TaskTwoWidget::reset() {
+    pairs.clear();
+    treeEncoder.clear();
+
+    QStandardItemModel *model =
+        static_cast<QStandardItemModel *>(ui->lexTable->model());
+    model->clear();
+    model = static_cast<QStandardItemModel *>(ui->processTable->model());
+    model->clear();
+    model = static_cast<QStandardItemModel *>(ui->treeView->model());
+    model->clear();
 }
 
 /*!

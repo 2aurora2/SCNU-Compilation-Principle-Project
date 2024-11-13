@@ -1,0 +1,12 @@
+addop=\+|-
+mulop=\*|/|^|%
+comop=<|(!=)|>|(==)|(<=)|(>=)
+assignop==
+digit=[0-9]
+letter=[a-zA-Z]
+_number=([1-9]digit*|digit)(\.digit+)?
+_identifier=(_|letter)(_|letter|digit)*
+_operator=addop|mulop|comop|assignop
+_separator=,|;|\(|\)|\[|\]|{|}
+_annotation=//(digit|letter|\+|-|\*|/|^|%|<|>|=|!|separator)*
+_keyword=(if)|(else)|(int)|(float)|(double)|(return)|(void)|(while)|(do)

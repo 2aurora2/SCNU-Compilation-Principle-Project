@@ -17,6 +17,8 @@
 
 #include "analysetable.h"
 
+#include <QDebug>
+
 AnalyseTable::AnalyseTable() {}
 
 /*!
@@ -28,6 +30,7 @@ AnalyseTable::AnalyseTable() {}
 */
 void AnalyseTable::init(LR lalr1, QHash<QString, QVector<QVector<QString>>> f) {
     // 先初始化规约的规则列表
+    formula.clear();
     QHashIterator<QString, QVector<QVector<QString>>> i(f);
     while (i.hasNext()) {
         i.next();
@@ -43,7 +46,10 @@ void AnalyseTable::init(LR lalr1, QHash<QString, QVector<QVector<QString>>> f) {
             formula.append(nonTerminal + " → " + ruleStr);
         }
     }
+    for (auto f : formula) qDebug() << f;
+    qDebug() << "===============";
     // 构建分析表
+    tb.clear();
     Cell cell;
     for (int i = 0; i < lalr1.size; ++i) {
         QHash<QString, int> change = lalr1.changeHash[i];
