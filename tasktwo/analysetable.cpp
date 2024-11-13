@@ -46,8 +46,6 @@ void AnalyseTable::init(LR lalr1, QHash<QString, QVector<QVector<QString>>> f) {
             formula.append(nonTerminal + " → " + ruleStr);
         }
     }
-    for (auto f : formula) qDebug() << f;
-    qDebug() << "===============";
     // 构建分析表
     tb.clear();
     Cell cell;

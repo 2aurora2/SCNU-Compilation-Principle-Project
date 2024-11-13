@@ -125,6 +125,9 @@ void TaskTwoWidget::uploadSyntaxTreeEncode() {
         QStringList encoder = lines[i + 1].split(" ");
         for (auto e : encoder) treeEncoder[rule].append(e.toInt());
     }
+    if (content.size())
+        QMessageBox::information(nullptr, "提示", "上传语法树编码文件成功！",
+                                 QMessageBox::Ok);
 }
 
 /*!
@@ -156,8 +159,8 @@ void TaskTwoWidget::analyseLex() {
     if (pairs.empty() || treeEncoder.empty()) {
         QMessageBox::warning(nullptr, "提示",
                              "请保证已上传下述文件，两者缺一不可： \n "
-                             "(1)源程序词法分析结果文件(.lex)\n "
-                             "(2)对应源程序的语法树编码文件(.txt)",
+                             "(1)源程序词法分析结果文件(*.lex)\n "
+                             "(2)对应源程序的语法树编码文件(*_syntax_tree.txt)",
                              QMessageBox::Ok);
         return;
     }
@@ -168,16 +171,18 @@ void TaskTwoWidget::analyseLex() {
     pairs.append(
         qMakePair(QString::fromUtf8("END_FLAG"), QString::fromUtf8("$")));
     QHash<int, QHash<QString, Cell>> tb = task2.tb.tb;
+    // 节点栈
+    QVector<SyntaxTreeNode *> nodeStk;
     // 分析栈：QPair第一个类型是元素内容，第二个元素是元素类型（1是状态编号，2是字符）
-    QVector<QPair<QString, int>> stk;
-    stk.push_back(qMakePair(QString::fromUtf8("$"), 2));
-    stk.push_back(qMakePair(QString::number(1), 1));
+    QVector<QPair<QString, int>> analyseStk;
+    analyseStk.push_back(qMakePair(QString::fromUtf8("$"), 2));
+    analyseStk.push_back(qMakePair(QString::number(1), 1));
     int row = 0;
-    addAnalyseRow(model, stk, pairs, row++);
+    addAnalyseRow(model, analyseStk, pairs, row++);
     for (int i = 0; i < pairs.size();) {
         // 从输入中拿出一个字符（first是类型，second是token）
         QPair<QString, QString> cur = pairs[i];
-        int idx = stk.back().first.toInt() - 1;
+        int idx = analyseStk.back().first.toInt() - 1;
         if (!tb[idx].contains(cur.first) && !tb[idx].contains(cur.second) &&
             !tb[idx].contains(EPSILON)) {
             QMessageBox::warning(nullptr, "提示", "语法错误！",
@@ -185,54 +190,97 @@ void TaskTwoWidget::analyseLex() {
             break;
         }
         Cell to;
-        QString match;
-        if (tb[idx].contains(cur.first))  // 匹配类型
-            to = tb[idx][cur.first], match = cur.second;
-        else if (tb[idx].contains(cur.second))  // 匹配token
-            to = tb[idx][cur.second], match = cur.second;
-        else if (tb[idx].contains(EPSILON))  // 匹配EPSILON
-            to = tb[idx][EPSILON], match = EPSILON;
+        QString matchForAnalyse;
+        Token matchForNode;
+        if (tb[idx].contains(cur.first)) {  // 匹配类型
+            to = tb[idx][cur.first];
+            matchForAnalyse = cur.second;
+            matchForNode.type = cur.first;
+            matchForNode.value = cur.second;
+        } else if (tb[idx].contains(cur.second)) {  // 匹配token
+            to = tb[idx][cur.second];
+            matchForAnalyse = cur.second;
+            matchForNode.type = cur.first;
+            matchForNode.value = cur.second;
+        } else if (tb[idx].contains(EPSILON)) {  // 匹配EPSILON
+            to = tb[idx][EPSILON];
+            matchForAnalyse = EPSILON;
+            matchForNode.type = "EPSILON";
+            matchForNode.value = EPSILON;
+        }
         bool nextStep = false;
         bool protocol = false;
         while (!nextStep) {
-            if (to.flag == 1) {  // 移进操作，直接push移进到的状态编号到分析栈
-                stk.push_back(qMakePair(match, 2));
-                stk.push_back(qMakePair(QString::number(to.num + 1), 1));
-                if (match != EPSILON) ++i;
+            // 移进
+            if (to.flag == 1) {
+                // 句子分析：直接push移进到的状态编号到分析栈
+                analyseStk.push_back(qMakePair(matchForAnalyse, 2));
+                analyseStk.push_back(qMakePair(QString::number(to.num + 1), 1));
+                if (matchForAnalyse != EPSILON) ++i;
                 nextStep = true;
-            } else if (to.flag == 2) {  // 规约操作
+                if (task2.notEnd.contains(matchForAnalyse)) continue;
+                // 语法树：对于终结符构造新的语法树节点并丢入节点栈
+                SyntaxTreeNode *newNode =
+                    new SyntaxTreeNode(matchForNode.type, matchForNode.value);
+                nodeStk.push_back(newNode);
+            }
+            // 规约
+            else if (to.flag == 2) {
                 protocol = true;
-                // 1. 找到规约的规则
-                //     a. 规约的符号 b. 规则右部的长度len
+                // 句子分析步骤<1,2,3>
+                // 语法树步骤<A,B>
+                // 1. 找到规约的规则，包括: 规约的符号symbol、规则右部的长度len
                 QString rule = task2.tb.formula[to.num];
                 QStringList ruleSplit = rule.split(" ");
                 QString symbol = ruleSplit[0];
                 int len = ruleSplit.size() - 2;
-                // 2. 从分析栈弹出len * 2的元素
-                //     a. 如果元素不足则源程序存在语法错误
-                int k = 0;
-                while (k < len * 2 && stk.size() > 0) {
-                    stk.pop_back();
-                    k++;
-                }
+                // A. 找到该条规约规则的语法树编码
+                QVector<int> encoder = treeEncoder[rule];
+                // 2. 从分析栈弹出len*2的元素，如果元素不足则源程序存在语法错误
+                int k;
+                for (k = 0; k < len * 2 && analyseStk.size() > 0; ++k)
+                    analyseStk.pop_back();
                 if (k < len * 2) {
                     QMessageBox::warning(nullptr, "提示", "语法错误！",
                                          QMessageBox::Ok);
                     goto show;
                 }
+                // B. 从节点栈弹出len个元素并构造语法树，
+                // 最后讲当前规约规则的根节点丢入节点栈
+                QVector<SyntaxTreeNode *> tempVec;
+                SyntaxTreeNode *tempRoot;  // 临时根节点
+                for (k = 0; k < len && nodeStk.size() > 0; ++k) {
+                    SyntaxTreeNode *temp = nodeStk.back();
+                    tempVec.append(temp);
+                    nodeStk.pop_back();
+                    if (encoder[encoder.size() - 1 - k] == 1) tempRoot = temp;
+                }
+                for (k = len - 1; k >= 0; --k) {
+                    if (encoder[encoder.size() - 1 - k] == 2)
+                        tempRoot->sonVec.append(tempVec[k]);
+                    else if (encoder[encoder.size() - 1 - k] == 3)
+                        tempRoot->broVec.append(tempVec[k]);
+                }
+                nodeStk.append(tempRoot);
                 // 3. 获取此时栈顶状态经过规约符号的转移，重复对to.flag的判断
-                int _idx = stk.back().first.toInt() - 1;
-                match = symbol;
+                int _idx = analyseStk.back().first.toInt() - 1;
+                matchForAnalyse = symbol;
                 to = tb[_idx][symbol];
-            } else {  // Accept
+            }
+            // 接受输入
+            else {
                 QMessageBox::information(nullptr, "提示", "接受输入！",
                                          QMessageBox::Ok);
+                // 语法树：将节点栈剩下的元素当作程序开始节点start的子节点
+                root->sonVec.append(nodeStk.back());
+                nodeStk.pop_back();
+                showSyntaxTree();
                 nextStep = true;
                 goto show;
             }
         }
         if (protocol) i--;  // 如果有规约操作则需重新拿输入的字符
-        addAnalyseRow(model, stk, pairs.mid(i), row++);
+        addAnalyseRow(model, analyseStk, pairs.mid(i), row++);
     }
 show:
     ui->processTable->setModel(model);
@@ -251,14 +299,19 @@ show:
 void TaskTwoWidget::reset() {
     pairs.clear();
     treeEncoder.clear();
+    if (root) {
+        delete root;
+        root = nullptr;
+    }
+    root = new SyntaxTreeNode("START", "start");
 
     QStandardItemModel *model =
         static_cast<QStandardItemModel *>(ui->lexTable->model());
-    model->clear();
+    if (model) model->clear();
     model = static_cast<QStandardItemModel *>(ui->processTable->model());
-    model->clear();
+    if (model) model->clear();
     model = static_cast<QStandardItemModel *>(ui->treeView->model());
-    model->clear();
+    if (model) model->clear();
 }
 
 /*!
@@ -403,4 +456,38 @@ void TaskTwoWidget::showLALR1AnalyseTable() {
     }
     ui->analyseTable->setModel(model);
     ui->analyseTable->verticalHeader()->hide();
+}
+
+/*!
+    @Function       dfs
+    @Description  渲染语法树的辅助函数
+    @Parameter  语法树节点t，当前节点的父节点parent
+    @Return
+    @Attention
+*/
+void TaskTwoWidget::dfs(SyntaxTreeNode *t, QStandardItem *parent) {
+    if (!t) return;
+    QStandardItem *item = new QStandardItem;
+    item->setEditable(false);
+    item->setText(t->token.type + ": " + t->token.value);
+    if (t->token.value != EPSILON) parent->appendRow(item);
+    for (int i = 0; i < t->sonVec.size(); ++i) dfs(t->sonVec[i], item);
+    for (int i = 0; i < t->broVec.size(); ++i) dfs(t->broVec[i], parent);
+}
+
+/*!
+    @Function       showSyntaxTree
+    @Description  展示语法树
+    @Parameter
+    @Return
+    @Attention
+*/
+void TaskTwoWidget::showSyntaxTree() {
+    QStandardItemModel *model = new QStandardItemModel(ui->treeView);
+    QStandardItem *item = new QStandardItem;
+    item->setText(root->token.type + ": " + root->token.value);
+    item->setEditable(false);
+    model->appendRow(item);
+    dfs(root->sonVec[0], item);
+    ui->treeView->setModel(model);
 }

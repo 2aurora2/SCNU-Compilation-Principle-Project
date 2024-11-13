@@ -27,6 +27,7 @@ SOURCES += \
     tasktwo/analysetable.cpp \
     tasktwo/lr.cpp \
     tasktwo/solutiontwo.cpp \
+    tasktwo/syntaxtreenode.cpp \
     widgets/taskonewidget.cpp \
     widgets/tasktwowidget.cpp \
     windows/mainwindow.cpp \
@@ -41,6 +42,7 @@ HEADERS += \
     tasktwo/lr.h \
     tasktwo/macro.h \
     tasktwo/solutiontwo.h \
+    tasktwo/syntaxtreenode.h \
     widgets/taskonewidget.h \
     widgets/tasktwowidget.h \
     windows/mainwindow.h \
