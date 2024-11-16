@@ -410,6 +410,7 @@ void TaskTwoWidget::showLALR1AnalyseTable() {
     // 展示分析表
     QStandardItemModel *model = new QStandardItemModel(ui->analyseTable);
     model->clear();
+    qDebug() << task2.lalr1.conflict;
     if (task2.lalr1.conflict == "规约-规约冲突") {
         model->setHorizontalHeaderLabels(QStringList() << "提示");
         QStandardItem *emptyItem = new QStandardItem(task2.lalr1.conflict);
