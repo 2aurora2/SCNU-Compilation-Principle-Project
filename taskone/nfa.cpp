@@ -132,7 +132,7 @@ Edge NFA::positiveClosure(Edge e1) {
 }
 
 /*!
-    @Function       positiveClosure
+    @Function       optional
     @Description  正则表达式的可选运算对应NFA的变化
     @Parameter  两个要进行可选运算的部分（一个部分由起始编号和终止编号构成）
     @Return 合并部分后新的起始编号与终止编号（以Edge的数据结构返回）
