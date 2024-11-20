@@ -93,7 +93,8 @@ void TaskTwoWidget::uploadLex() {
     QStringList lines = content.split("\n", QString::SkipEmptyParts);
     for (const QString &line : lines) {
         QStringList elements = line.split(" ", QString::SkipEmptyParts);
-        if (elements.size() < 2 || elements[0] == "comment") {
+        if (elements.size() < 2 || elements[0] == "comment" ||
+            elements[0] == "annotation") {
             continue;
         }
         pairs.append(qMakePair(elements.at(0), elements.at(1)));
