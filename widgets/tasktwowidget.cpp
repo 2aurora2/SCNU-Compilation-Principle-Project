@@ -84,6 +84,11 @@ void TaskTwoWidget::analyseGrammar() {
 */
 void TaskTwoWidget::uploadLex() {
     pairs.clear();
+    if (root) {
+        delete root;
+        root = nullptr;
+    }
+    root = new SyntaxTreeNode("START", "start");
     QString content = Util::ReadFile();
     QStringList lines = content.split("\n", QString::SkipEmptyParts);
     for (const QString &line : lines) {
@@ -178,6 +183,7 @@ void TaskTwoWidget::analyseLex() {
     analyseStk.push_back(qMakePair(QString::fromUtf8("$"), 2));
     analyseStk.push_back(qMakePair(QString::number(1), 1));
     int row = 0;
+    bool accept = false;
     addAnalyseRow(model, analyseStk, pairs, row++);
     for (int i = 0; i < pairs.size();) {
         // 从输入中拿出一个字符（first是类型，second是token）
@@ -276,6 +282,7 @@ void TaskTwoWidget::analyseLex() {
                 nodeStk.pop_back();
                 showSyntaxTree();
                 nextStep = true;
+                accept = true;
                 goto show;
             }
         }
@@ -283,6 +290,8 @@ void TaskTwoWidget::analyseLex() {
         addAnalyseRow(model, analyseStk, pairs.mid(i), row++);
     }
 show:
+    if (!accept)
+        QMessageBox::warning(nullptr, "提示", "语法错误！", QMessageBox::Ok);
     ui->processTable->setModel(model);
     ui->processTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
     ui->processTable->resizeColumnsToContents();
