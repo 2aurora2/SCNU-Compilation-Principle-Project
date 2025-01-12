@@ -162,7 +162,7 @@ QVector<Node> SolutionOne::regexToPostfix(QString regex) {
     @Return
     @Attention
 */
-void SolutionOne::postfixToNFA(QVector<Node> postfix, NFA &nfa) {
+void SolutionOne::postfixToNFA(QVector<Node> postfix, NFA& nfa) {
     QStack<Edge> stateStk;
     for (auto item : postfix) {
         if (item.flag == 1) {
@@ -319,7 +319,7 @@ QVector<QPair<QString, QString>> SolutionOne::analyseCode(QString code) {
 */
 void SolutionOne::preProcessing() {
     // 预处理中括号
-    for (auto &regex : regexs) {
+    for (auto& regex : regexs) {
         int equalIndex = regex.indexOf('=');
         QString partAfterEqual = regex.mid(equalIndex + 1);
         QString processedPart = removeSquareBrackets(partAfterEqual);
@@ -337,7 +337,7 @@ void SolutionOne::preProcessing() {
     }
     // 添加连接符
     trans.clear();
-    for (auto &regex : regexs) {
+    for (auto& regex : regexs) {
         if (regex[0] != '_') continue;
         int equalIndex = regex.indexOf('=');
         QString left = regex.mid(1, equalIndex - 1);
@@ -401,6 +401,81 @@ void SolutionOne::mindfaProcessing() {
 }
 
 /*!
+    @Function       mergeRanges
+    @Description  封装字符范围合并的函数
+    @Parameter   某个DFA状态的各个转移情况
+    @Return        合并结果
+    @Attention
+*/
+QMap<QPair<QChar, QChar>, int> mergeRanges(
+    const QHash<QString, int>& transitions) {
+    QMap<QPair<QChar, QChar>, int> rangeMap;
+    // 定义需要合并的字符范围（按优先级从大到小排序）
+    QList<QPair<QChar, QChar>> ranges = {
+        qMakePair('0', '9'),  // '0'-'9'
+        qMakePair('1', '9'),  // '1'-'9'
+        qMakePair('a', 'z'),  // 'a'-'z'
+        qMakePair('A', 'Z')   // 'A'-'Z'
+    };
+    for (const auto& range : ranges) {
+        QChar start = range.first;
+        QChar end = range.second;
+        int targetState = -1;  // 初始化为无效状态
+        bool isRangeValid = true;
+        // 检查当前范围内的所有字符是否具有相同的目标状态
+        for (int unicode = start.unicode(); unicode <= end.unicode();
+             ++unicode) {
+            QChar ch(unicode);
+            QString key(ch);
+            if (transitions.contains(key)) {
+                if (targetState == -1) {
+                    targetState = transitions[key];  // 记录第一个字符的目标状态
+                } else if (transitions[key] != targetState) {
+                    isRangeValid = false;  // 如果目标状态不一致，则范围无效
+                    break;
+                }
+            } else {
+                isRangeValid = false;  // 如果字符不在转移条件中，则范围无效
+                break;
+            }
+        }
+        // 如果范围有效，则检查是否已经被更大的范围覆盖
+        if (isRangeValid) {
+            bool isCovered = false;
+            for (auto it = rangeMap.begin(); it != rangeMap.end(); ++it) {
+                QChar existingStart = it.key().first;
+                QChar existingEnd = it.key().second;
+                if (start.unicode() >= existingStart.unicode() &&
+                    end.unicode() <= existingEnd.unicode()) {
+                    isCovered = true;  // 当前范围已被更大的范围覆盖
+                    break;
+                }
+            }
+            if (!isCovered) rangeMap.insert(range, targetState);
+        }
+    }
+    // 添加未合并的单个字符
+    for (auto it = transitions.begin(); it != transitions.end(); ++it) {
+        QString key = it.key();
+        if (key.length() == 1) {  // 确保是单个字符
+            QChar ch = key.at(0);
+            bool isMerged = false;
+            // 检查字符是否已经被合并到某个范围中
+            for (const auto& range : rangeMap.keys())
+                if (ch.unicode() >= range.first.unicode() &&
+                    ch.unicode() <= range.second.unicode()) {
+                    isMerged = true;
+                    break;
+                }
+            // 如果字符未被合并，则单独添加到 rangeMap 中
+            if (!isMerged) rangeMap.insert(qMakePair(ch, ch), it.value());
+        }
+    }
+
+    return rangeMap;
+}
+
+/*!
     @Function       generateCode
     @Description    生成可进行词法分析的源程序
     @Parameter
@@ -458,14 +533,46 @@ void SolutionOne::generateCode() {
         code += "\t\tswitch(state) {\n";
         for (int j = 1; j <= min_dfa_list[i].stateNum; ++j) {
             code += "\t\tcase " + QString::number(j) + ":\n";
+            // 获取当前状态的转移条件
+            QHash<QString, int> transitions = min_dfa_list[i].G[j];
+
+            // 合并字符范围
+            QMap<QPair<QChar, QChar>, int> rangeMap = mergeRanges(transitions);
+
+            // 生成字符范围的 if 语句
+            for (auto it = rangeMap.begin(); it != rangeMap.end(); ++it) {
+                QChar start = it.key().first;
+                QChar end = it.key().second;
+                int targetState = it.value();
+
+                if (start != end) {
+                    // 字符范围
+                    code += "\t\t\tif(ch >= '" + QString(start) +
+                            "' && ch <= '" + QString(end) + "') {\n";
+                    code += "\t\t\t\tstate = " + QString::number(targetState) +
+                            ";\n";
+                    code += "\t\t\t\tbuffer += ch;\n";
+                    code += "\t\t\t\tsrc_file.get(ch);\n";
+                    code += "\t\t\t\tbreak;\n";
+                    code += "\t\t\t}\n";
+                }
+            }
+            // 生成单个字符的 switch 语句
             code += "\t\t\tswitch(ch) {\n";
-            for (auto change : min_dfa_list[i].G[j].keys()) {
-                code += "\t\t\tcase '" + change + "':\n";
-                code += "\t\t\t\tstate = " +
-                        QString::number(min_dfa_list[i].G[j][change]) + ";\n";
-                code += "\t\t\t\tbuffer += ch;\n";
-                code += "\t\t\t\tsrc_file.get(ch);\n";
-                code += "\t\t\t\tbreak;\n";
+            for (auto it = rangeMap.begin(); it != rangeMap.end(); ++it) {
+                QChar start = it.key().first;
+                QChar end = it.key().second;
+                int targetState = it.value();
+
+                if (start == end) {
+                    // 单个字符
+                    code += "\t\t\tcase '" + QString(start) + "':\n";
+                    code += "\t\t\t\tstate = " + QString::number(targetState) +
+                            ";\n";
+                    code += "\t\t\t\tbuffer += ch;\n";
+                    code += "\t\t\t\tsrc_file.get(ch);\n";
+                    code += "\t\t\t\tbreak;\n";
+                }
             }
             code += "\t\t\tdefault:\n";
             if (min_dfa_list[i].endStates.contains(j)) {

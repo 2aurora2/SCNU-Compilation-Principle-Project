@@ -501,4 +501,6 @@ void TaskTwoWidget::showSyntaxTree() {
     model->appendRow(item);
     dfs(root->sonVec[0], item);
     ui->treeView->setModel(model);
+    ui->treeView->expandAll();
+    ui->treeView->header()->hide();
 }
