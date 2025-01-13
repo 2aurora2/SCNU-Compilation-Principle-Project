@@ -292,15 +292,29 @@ QVector<QPair<QString, QString>> SolutionOne::analyseCode(QString code) {
     QFile file(filePath);
     if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
         QTextStream in(&file);
+        // 读取第一行的映射信息，将映射信息存储到 QMap 中
+        QString mappingLine = in.readLine();
+        QStringList mappingElements =
+            mappingLine.split(" ", QString::SkipEmptyParts);
+        QMap<QString, QString> idToTypeMap;
+        for (int i = 0; i < mappingElements.size(); i += 2) {
+            QString id = mappingElements.at(i);
+            QString type = mappingElements.at(i + 1);
+            idToTypeMap[id] = type;
+        }
         while (!in.atEnd()) {
             QString line = in.readLine();
             line = line.trimmed();
             QStringList elements = line.split(" ", QString::SkipEmptyParts);
-            if (elements.size() < 2) {
-                qDebug() << line;
-                continue;
-            }
-            pairs.append(qMakePair(elements.at(0), elements.at(1)));
+            if (elements.size() < 2) continue;
+            QString tokenId = elements.at(0);
+            QString tokenValue = elements.at(1);
+            // 根据 tokenId 查找对应的 tokenType
+            if (idToTypeMap.contains(tokenId)) {
+                QString tokenType = idToTypeMap[tokenId];
+                pairs.append(qMakePair(tokenType, tokenValue));
+            } else
+                qDebug() << "Unknown token ID:" << tokenId;
         }
         // 关闭文件
         file.close();
@@ -494,12 +508,12 @@ void SolutionOne::generateCode() {
         types.append(it.key());
         min_dfa_list.append(it.value());
     }
-
     // 头文件
     code = "#include <iostream>\n";
     code += "#include <fstream>\n";
     code += "#include <string>\n";
     code += "#include <cctype>\n";
+    code += "#include <unordered_map>\n";
     code += "using namespace std;\n\n";
     // 全局变量
     code += "ifstream src_file(\"sample.txt\", ios::in);\n";
@@ -510,6 +524,13 @@ void SolutionOne::generateCode() {
     code += "string buf_suc;\n";
     code += "string tok_suc;\n";
     code += "string buf_err;\n\n";
+    // 添加 types 的映射
+    code += "std::unordered_map<std::string, int> types_map = {\n";
+    for (int i = 0; i < types.size(); ++i) {
+        code += "\t{\"" + types[i] + "\", " + QString::number(i) + "}";
+        if (i != types.size() - 1) code += ",\n";
+    }
+    code += "\n};\n\n";
     // 跳过空白字符函数
     code += "void ignoreSpace() {\n";
     code += "\tchar ch;\n";
@@ -535,16 +556,13 @@ void SolutionOne::generateCode() {
             code += "\t\tcase " + QString::number(j) + ":\n";
             // 获取当前状态的转移条件
             QHash<QString, int> transitions = min_dfa_list[i].G[j];
-
             // 合并字符范围
             QMap<QPair<QChar, QChar>, int> rangeMap = mergeRanges(transitions);
-
             // 生成字符范围的 if 语句
             for (auto it = rangeMap.begin(); it != rangeMap.end(); ++it) {
                 QChar start = it.key().first;
                 QChar end = it.key().second;
                 int targetState = it.value();
-
                 if (start != end) {
                     // 字符范围
                     code += "\t\t\tif(ch >= '" + QString(start) +
@@ -595,6 +613,14 @@ void SolutionOne::generateCode() {
     }
     // 主函数
     code += "int main(void) {\n";
+    // 保存token类型编码
+    code += "\tres_file << ";
+    for (int i = 0; i < types.size(); ++i) {
+        code +=
+            "\"" + QString::number(i) + "\" << \" \" << \"" + types[i] + "\"";
+        if (i != types.size() - 1) code += "<< \" \" << ";
+    }
+    code += "<< endl;\n";
     code += "\tchar ch;\n";
     code += "\tignoreSpace();\n";
     code += "\twhile((ch = src_file.peek()) != EOF) {\n";
@@ -613,7 +639,7 @@ void SolutionOne::generateCode() {
     code += "\t\t\tres_file << \"UNKNOWN: \" << buf_err << endl;\n";
     code += "\t\t\texit(1);\n";
     code += "\t\t}\n";
-    code += "\t\tres_file << tok_suc << \" \" << buf_suc << endl;\n";
+    code += "\t\tres_file << types_map[tok_suc] << \" \" << buf_suc << endl;\n";
     code += "\t\tread_pos += buf_suc.size();\n";
     code += "\t\tsrc_file.seekg(read_pos, ios::beg);\n";
     code += "\t\tignoreSpace();\n";

@@ -91,13 +91,35 @@ void TaskTwoWidget::uploadLex() {
     root = new SyntaxTreeNode("START", "start");
     QString content = Util::ReadFile();
     QStringList lines = content.split("\n", QString::SkipEmptyParts);
-    for (const QString &line : lines) {
+    // 解析第一行的类型映射信息
+    QString mappingLine = lines[0];  // 第一行是映射信息
+    QStringList mappingElements =
+        mappingLine.split(" ", QString::SkipEmptyParts);
+    // 将映射信息存储到 QMap 中
+    QMap<QString, QString> idToTypeMap;
+    for (int i = 0; i < mappingElements.size(); i += 2) {
+        QString id = mappingElements.at(i);
+        QString type = mappingElements.at(i + 1);
+        idToTypeMap[id] = type;
+    }
+    for (int i = 1; i < lines.size(); ++i) {
+        QString line = lines[i].trimmed();
         QStringList elements = line.split(" ", QString::SkipEmptyParts);
-        if (elements.size() < 2 || elements[0] == "comment" ||
-            elements[0] == "annotation") {
+        if (elements.size() < 2) {
+            qDebug() << "无效的行格式：" << line;
             continue;
         }
-        pairs.append(qMakePair(elements.at(0), elements.at(1)));
+        QString tokenId = elements.at(0);
+        QString tokenValue = elements.at(1);
+        if (idToTypeMap.contains(tokenId)) {
+            QString tokenType = idToTypeMap[tokenId];
+            if (tokenType == "comment" || tokenType == "annotation")
+                continue;  // 跳过，不放入 pairs
+            pairs.append(qMakePair(
+                tokenType, tokenValue));  // 存储 <token_type, token_value>
+        } else {
+            qDebug() << "未知的 token ID：" << tokenId;
+        }
     }
     // 展示上传的文件
     QStandardItemModel *model = new QStandardItemModel(ui->lexTable);
