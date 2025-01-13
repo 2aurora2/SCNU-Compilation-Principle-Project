@@ -36,17 +36,27 @@ root
 │	├─ syntaxtreenode.cpp # 语法树相关数据结构成员函数的实现
 │	└─ syntaxtreenode.h # 语法树相关数据结构的定义
 ├─ test
-│	├─ minic
-│	│	├─ minic_grammar.txt # mini-c文法规则
-│	│	├─ minic_regex.txt # mini-c单词正则表达式
-│	│	├─ minic_syntax_tree.txt # mini-c用于语法树生成的文法规则编码
-│	│	└─ sample.mic # mini-c的测试源程序
-│	└─ tiny
-│	 	├─ sample.tny # tiny的测试源程序
-│	 	├─ tiny_grammar.txt # tiny的文法规则
-│	 	├─ tiny_inter_encode.txt # tiny用于中间代码生成的文法规则编码
-│	 	├─ tiny_regex.txt # tiny的单词正则表达式
-│	 	└─ tiny_syntax_tree.txt # tiny用于语法树生成的文法规则编码
+│    ├─ minic
+│    │    ├─ mini-c语言单词正则表达式.txt
+│    │    ├─ mini-c语言文法规则.txt
+│    │    ├─ mini-c语言文法规则语法树编码.txt
+│    │    ├─ mini-c语言测试源程序.mic
+│    │    ├─ mini-c语言测试源程序词法分析结果.lex
+│    │    └─ mini-c语言生成的词法分析源程序结果.cpp
+│    ├─ tiny
+│    │    ├─ tiny语言单词正则表达式.txt
+│    │    ├─ tiny语言文法规则.txt
+│    │    ├─ tiny语言文法规则语法树编码.txt
+│    │    ├─ tiny语言测试源程序.tny
+│    │    ├─ tiny语言测试源程序词法分析结果.lex
+│    │    └─ tiny语言生成的词法分析源程序结果.cpp
+│    └─ unit
+│         ├─ 单元测试单词正则表达式.txt
+│         ├─ 单元测试文法规则.txt
+│         ├─ 单元测试文法规则语法树编码.txt
+│         ├─ 单元测试源程序.unit
+│         ├─ 单元测试源程序词法分析结果.lex
+│         └─ 单元测试生成的词法分析源程序结果.cpp
 ├─ util
 │	├─ utils.cpp # Util类静态成员函数的具体实现
 │	└─ utils.h	# 常用操作的函数封装为Util类的静态成员

@@ -1,0 +1,5 @@
+digit=[0-9]
+letter=[a-zA-Z]
+_number=digit|([1-9]digit*)
+_identifier=letter(digit|letter)*
+_operator=\+|\*

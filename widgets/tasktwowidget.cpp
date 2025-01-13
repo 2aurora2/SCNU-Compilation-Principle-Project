@@ -516,6 +516,7 @@ void TaskTwoWidget::dfs(SyntaxTreeNode *t, QStandardItem *parent) {
     @Attention
 */
 void TaskTwoWidget::showSyntaxTree() {
+    qDebug() << "开始展示语法树！";
     QStandardItemModel *model = new QStandardItemModel(ui->treeView);
     QStandardItem *item = new QStandardItem;
     item->setText(root->token.type + ": " + root->token.value);

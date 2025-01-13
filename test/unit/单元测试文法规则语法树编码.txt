@@ -1,0 +1,14 @@
+n → number
+1
+n → identifier
+1
+E' → E
+1
+F → F * n
+2 1 2
+F → n
+1
+E → E + F
+2 1 2
+E → F
+1
